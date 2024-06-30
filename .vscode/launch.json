@@ -6,10 +6,9 @@
   "configurations": [
     {
       "name": "Python: Current File",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "${file}",
-      //"program": "D:\\WorkSpace\\e_drive\\202306\\Esprima_jp\\main.js",
       "console": "integratedTerminal",
       "justMyCode": true
     },

@@ -11,10 +11,10 @@ const readline = require('readline');
 
 /*Initialize*/
 /*Run Analyze Program Path*/
-const script = 'D:/WorkSpace/e_drive/202306/Esprima_jp/main.js';
+const script = 'D:/Files/WorkSpace/202306_APIDistinct/Esprima_jp/main.js';
 const main = require(script);
 /*Repository Path*/
-const reqFolder = 'D:/WorkSpace/e_drive/202306/git-nature-js/#experiment';
+const reqFolder = 'D:/Files/WorkSpace/202306_APIDistinct/Datasets/#experiment';
 /*Result*/
 let editingcode_res;
 let reqFolder_res;
