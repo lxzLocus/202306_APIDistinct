@@ -1,0 +1,69 @@
+const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const readline = require('readline');
+
+
+//module.exports = ;
+
+/********Initialize*******/
+/*main Prog*/
+const mainScript = 'D:\\WorkSpace\\e_drive\\202306\\Esprima_jp\\main.js';
+
+/*Editing Code*/
+//const scriptToRun = "E:\\Files\\workspace\\202306\\git-nature-js\\#Google App Scripts\\post_aircon.gs"; // 実行したいスクリプトファイルの名前を変数に設定
+const scriptToRun = process.argv[2];
+
+/*Repository*/
+const reqFolder = 'D:\\WorkSpace\\e_drive\\202306\\git-nature-js\\#sort_extension\\ext_latest\\gs';
+
+/*result*/
+let editingcode_res;
+let reqFolder_res;
+
+/*main.js*/
+const main = require(mainScript);
+
+
+
+/*********Prog********/
+/*Editing Code*/
+editingcode_res = main(scriptToRun);
+
+/*reqFolder Codes*/
+reqFolder_res = processFilesInFolder(reqFolder); // メインの処理を開始
+
+
+function processFilesInFolder(folderPath) {
+  fs.readdir(folderPath, (err, files) => {
+    if (err) {
+      console.error('ディレクトリを読み込む際にエラーが発生しました:', err);
+      return;
+    }
+
+    files.forEach((file) => {
+      const filePath = path.join(folderPath, file);
+
+      fs.stat(filePath, (err, stats) => {
+        if (err) {
+          console.error('ファイル情報を取得中にエラーが発生しました:', err);
+          return;
+        }
+
+        if (stats.isFile()) {
+          let rtn;
+          rtn = main(filePath); // ファイルの場合、main 関数を実行
+          //console.log(rtn)
+
+          if(rtn[0] === true && rtn[4] === true && rtn[1] === editingcode_res[1]){
+            console.log('%c推薦コード\n', 'color: yellow;');
+
+          }
+
+        } else if (stats.isDirectory()) {
+          processFilesInFolder(filePath); // サブディレクトリの場合、再帰的に処理
+        }
+      });
+    });
+  });
+}

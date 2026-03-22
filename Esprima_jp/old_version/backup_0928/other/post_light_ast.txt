@@ -1,0 +1,269 @@
+Script {
+  type: 'Program',
+  body: [
+    FunctionDeclaration {
+      type: 'FunctionDeclaration',
+      id: Identifier {
+        type: 'Identifier',
+        name: 'post_light',
+        start: undefined,
+        end: undefined
+      },
+      params: [ Identifier { type: 'Identifier', name: 'postData' } ],
+      body: BlockStatement {
+        type: 'BlockStatement',
+        body: [
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'url',
+                  start: undefined,
+                  end: undefined
+                },
+                init: BinaryExpression {
+                  type: 'BinaryExpression',
+                  operator: '+',
+                  left: BinaryExpression {
+                    type: 'BinaryExpression',
+                    operator: '+',
+                    left: Literal {
+                      type: 'Literal',
+                      value: 'https://api.nature.global/1/appliances/',
+                      raw: "'https://api.nature.global/1/appliances/'",
+                      start: undefined,
+                      end: undefined
+                    },
+                    right: Identifier {
+                      type: 'Identifier',
+                      name: 'light_id',
+                      start: undefined,
+                      end: undefined
+                    }
+                  },
+                  right: Literal {
+                    type: 'Literal',
+                    value: '/light',
+                    raw: "'/light'",
+                    start: undefined,
+                    end: undefined
+                  }
+                }
+              }
+            ],
+            kind: 'var'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'headers',
+                  start: undefined,
+                  end: undefined
+                },
+                init: ObjectExpression {
+                  type: 'ObjectExpression',
+                  properties: [
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [BinaryExpression],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    }
+                  ]
+                }
+              }
+            ],
+            kind: 'var'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'options',
+                  start: undefined,
+                  end: undefined
+                },
+                init: ObjectExpression {
+                  type: 'ObjectExpression',
+                  properties: [
+                    Property {
+                      type: 'Property',
+                      key: [Identifier],
+                      computed: false,
+                      value: [Literal],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    },
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Literal],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    },
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Identifier],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    },
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Identifier],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    }
+                  ]
+                }
+              }
+            ],
+            kind: 'var'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'loging',
+                  start: undefined,
+                  end: undefined
+                },
+                init: CallExpression {
+                  type: 'CallExpression',
+                  callee: StaticMemberExpression {
+                    type: 'MemberExpression',
+                    computed: false,
+                    object: Identifier {
+                      type: 'Identifier',
+                      name: 'UrlFetchApp',
+                      start: undefined,
+                      end: undefined
+                    },
+                    property: Identifier {
+                      type: 'Identifier',
+                      name: 'fetch',
+                      start: undefined,
+                      end: undefined
+                    }
+                  },
+                  arguments: [
+                    Identifier { type: 'Identifier', name: 'url' },
+                    Identifier { type: 'Identifier', name: 'options' }
+                  ]
+                }
+              }
+            ],
+            kind: 'var'
+          },
+          ExpressionStatement {
+            type: 'ExpressionStatement',
+            expression: CallExpression {
+              type: 'CallExpression',
+              callee: StaticMemberExpression {
+                type: 'MemberExpression',
+                computed: false,
+                object: Identifier {
+                  type: 'Identifier',
+                  name: 'console',
+                  start: undefined,
+                  end: undefined
+                },
+                property: Identifier {
+                  type: 'Identifier',
+                  name: 'log',
+                  start: undefined,
+                  end: undefined
+                }
+              },
+              arguments: [
+                CallExpression {
+                  type: 'CallExpression',
+                  callee: StaticMemberExpression {
+                    type: 'MemberExpression',
+                    computed: false,
+                    object: Identifier {
+                      type: 'Identifier',
+                      name: 'JSON',
+                      start: undefined,
+                      end: undefined
+                    },
+                    property: Identifier {
+                      type: 'Identifier',
+                      name: 'parse',
+                      start: undefined,
+                      end: undefined
+                    }
+                  },
+                  arguments: [ Identifier { type: 'Identifier', name: 'loging' } ]
+                }
+              ]
+            }
+          },
+          ExpressionStatement {
+            type: 'ExpressionStatement',
+            expression: CallExpression {
+              type: 'CallExpression',
+              callee: Identifier {
+                type: 'Identifier',
+                name: 'push',
+                start: undefined,
+                end: undefined
+              },
+              arguments: [
+                BinaryExpression {
+                  type: 'BinaryExpression',
+                  operator: '+',
+                  left: Literal {
+                    type: 'Literal',
+                    value: 'Light:',
+                    raw: "'Light:'",
+                    start: undefined,
+                    end: undefined
+                  },
+                  right: CallExpression {
+                    type: 'CallExpression',
+                    callee: Identifier {
+                      type: 'Identifier',
+                      name: 'String',
+                      start: undefined,
+                      end: undefined
+                    },
+                    arguments: [ [StaticMemberExpression] ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      generator: false,
+      expression: false,
+      async: false
+    }
+  ],
+  sourceType: 'script'
+}

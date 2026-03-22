@@ -6,7 +6,7 @@ module.exports = analyze_Prog;
 
 // ASTの特定の識別子を置換し、エンドポイントの比較を行う関数
 function analyze_Prog(ast) {
-  const jsonFilePath = 'D:/Workspace/e_drive/202306/API_json/API_list.json';
+  const jsonFilePath = 'E:/Files/workspace/202306/API_json/API_list.json';
   const jsonString = fs.readFileSync(jsonFilePath, 'utf8');
   const baseJson = JSON.parse(jsonString);
 
@@ -597,18 +597,6 @@ function find_url_node(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
     return [param0, param1, opt_flag];
   }
 
-  if (ast.type === 'ObjectExpression') {
-    for (let i = ast.properties.length - 1; i >= 0; i--) {
-      let tmp = find_url_node(ast.properties[i], pay_flag, callee_flag, opt_flag, param0, param1);
-
-      if (tmp === null) {
-        return [param0, param1, opt_flag];
-      }
-    }
-
-    return tmp;
-  }
-
 
   /*if*/
   if (ast.type === 'IfStatement'){
@@ -636,35 +624,6 @@ function find_url_node(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
     return [param0, param1, opt_flag];
   }
 
-  if (ast.type === 'TemplateLiteral'){
-    const left = find_url_node(ast.quasis[0], pay_flag, callee_flag, opt_flag, param0, param1);
-    const right = find_url_node(ast.quasis[1], pay_flag, callee_flag, opt_flag, param0, param1);
-
-    if (left == null || right == null) {
-      return null;
-    } else {
-      if (left[1] === undefined && left[2] === undefined) {
-        var leftVar = left[0];
-        // ここで myVar を使う
-      }
-
-      if (right[1] === undefined && right[2] === undefined) {
-        var rightVar = right[0];
-        // ここで myVar を使う
-      }
-
-      return [leftVar + '--TOKEN--'+ rightVar];
-    }
-  }
-
-  if(ast.type === 'TemplateElement'){
-    if (opt_flag === 3) {
-      //return ast.value;
-      return [ast.value.raw, undefined, undefined];
-    }
-
-    return [param0, param1, opt_flag];
-  }
   return null;
 }
 

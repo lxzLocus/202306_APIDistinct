@@ -6,7 +6,7 @@ module.exports = analyze_Prog;
 
 // ASTの特定の識別子を置換し、エンドポイントの比較を行う関数
 function analyze_Prog(ast) {
-  const jsonFilePath = 'D:/Workspace/e_drive/202306/API_json/API_list.json';
+  const jsonFilePath = 'E:/Files/workspace/202306/API_json/API_list.json';
   const jsonString = fs.readFileSync(jsonFilePath, 'utf8');
   const baseJson = JSON.parse(jsonString);
 
@@ -91,47 +91,6 @@ function analyze_Prog(ast) {
       const response = await axios.post(url, payload, config);
       */
 
-
-      /*url有無*/
-      try {
-        url_logic = url_initial(ast, baseJson, module_name, module_literal)
-      } catch (e) {
-        /*exception*/
-        console.log('catch exception URL_Initial');
-        return '100';
-      }
-
-      if (url_logic[0] === true) {
-        /*option有無*/
-        opt_logic = opt_initial(ast, module_name, module_literal)
-        if (opt_logic[0] === true) {
-
-          /*options内 + postData*/
-          try {
-            param_logic = param_initial(ast, baseJson, url_logic[1], module_name, module_literal)
-            console.log('param_logic : %s\n', param_logic)
-
-            return [url_logic[0], url_logic[1], opt_logic[0], opt_logic[1], param_logic[0], param_logic[1], param_logic[2], param_logic[3]];
-
-          } catch (e) {
-            param_logic = [false, null, false, false]
-            console.log('catch exception param_Initial');
-
-            return [url_logic[0], url_logic[1], opt_logic[0], opt_logic[1], param_logic[0], param_logic[1], param_logic[2], param_logic[3]];
-          }
-        } else {
-          console.log('変数 ', opt_logic[1], ' が検出できず')
-
-          return '200';
-        }
-      } else {
-        /*変数対応しているがurlが一致しない*/
-        console.log('対応する変数がない、またはurlが一致しない')
-
-        return '101';
-      }
-
-    }else if(module_name === 'request'){
 
       /*url有無*/
       try {
@@ -368,7 +327,7 @@ function find_module(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
 
   if (ast.type === 'Literal') { // 文字・数字
     if(callee_flag === 1){
-      if (ast.value === 'node-fetch' || ast.value === 'axios' || ast.value === 'request'){
+      if (ast.value === 'node-fetch' || ast.value === 'axios'){
 
         return [ast.value, undefined, undefined];
       }
@@ -525,10 +484,6 @@ function find_url_node(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
       }
     }
 
-    if (ast.callee.type === 'ArrowFunctionExpression'){
-      return find_url_node(ast.callee.body, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
     //urlが変数の場合 opt calle
     if(ast.callee.name === param0 && opt_flag === 1){
 
@@ -597,18 +552,6 @@ function find_url_node(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
     return [param0, param1, opt_flag];
   }
 
-  if (ast.type === 'ObjectExpression') {
-    for (let i = ast.properties.length - 1; i >= 0; i--) {
-      let tmp = find_url_node(ast.properties[i], pay_flag, callee_flag, opt_flag, param0, param1);
-
-      if (tmp === null) {
-        return [param0, param1, opt_flag];
-      }
-    }
-
-    return tmp;
-  }
-
 
   /*if*/
   if (ast.type === 'IfStatement'){
@@ -632,39 +575,6 @@ function find_url_node(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
     return loop_url_node(ast.init, pay_flag, callee_flag, opt_flag, param0, param1);
   }
 
-  if(ast.type === 'EmptyStatement'){
-    return [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'TemplateLiteral'){
-    const left = find_url_node(ast.quasis[0], pay_flag, callee_flag, opt_flag, param0, param1);
-    const right = find_url_node(ast.quasis[1], pay_flag, callee_flag, opt_flag, param0, param1);
-
-    if (left == null || right == null) {
-      return null;
-    } else {
-      if (left[1] === undefined && left[2] === undefined) {
-        var leftVar = left[0];
-        // ここで myVar を使う
-      }
-
-      if (right[1] === undefined && right[2] === undefined) {
-        var rightVar = right[0];
-        // ここで myVar を使う
-      }
-
-      return [leftVar + '--TOKEN--'+ rightVar];
-    }
-  }
-
-  if(ast.type === 'TemplateElement'){
-    if (opt_flag === 3) {
-      //return ast.value;
-      return [ast.value.raw, undefined, undefined];
-    }
-
-    return [param0, param1, opt_flag];
-  }
   return null;
 }
 
@@ -788,10 +698,6 @@ function find_opt_node(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
       }
     }
 
-    if (ast.callee.type === 'ArrowFunctionExpression'){
-      return find_opt_node(ast.callee.body, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
     //urlが変数の場合 opt calle
     if(ast.callee.name === param0 && opt_flag === 1){
 
@@ -876,10 +782,6 @@ function find_opt_node(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
   if (ast.type === 'VariableDeclarator') {
 
     return loop_opt_node(ast.init, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if(ast.type === 'EmptyStatement'){
-    return [param0, param1, opt_flag];
   }
 
   return null;
@@ -986,11 +888,6 @@ function find_param_node(ast, pay_flag, callee_flag, opt_flag, info_flag, param0
 
   if (ast.type === 'CallExpression') { // 関数呼び出し
 
-
-    if (ast.callee.type === 'ArrowFunctionExpression'){
-      return find_param_node(ast.callee.body, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-    }
-
     if(ast.callee.name === param0 && opt_flag === 1){
       opt_flag = 2
       callee_flag = 0
@@ -1007,7 +904,7 @@ function find_param_node(ast, pay_flag, callee_flag, opt_flag, info_flag, param0
         return find_param_node(ast.arguments[0], pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
       }
     }
-
+    
 
     return [param0, param1, opt_flag];
   }
@@ -1213,10 +1110,6 @@ function find_param_node(ast, pay_flag, callee_flag, opt_flag, info_flag, param0
     return loop_param_node(ast.init, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
   }
 
-  if(ast.type === 'EmptyStatement'){
-    return [param0, param1, opt_flag];
-  }
-
 
   return null;
 }
@@ -1342,10 +1235,6 @@ function find_url_axios(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
       }
     }
 
-    if (ast.callee.type === 'ArrowFunctionExpression'){
-      return find_url_axios(ast.callee.body, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
     //urlが変数の場合 opt calle
     if(callee_flag === 1){
 
@@ -1439,10 +1328,6 @@ function find_url_axios(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
   if (ast.type === 'VariableDeclarator') {
 
     return loop_url_axios(ast.init, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if(ast.type === 'EmptyStatement'){
-    return [param0, param1, opt_flag];
   }
 
   return null;
@@ -1566,10 +1451,6 @@ function find_opt_axios(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
       }
     }
 
-    if (ast.callee.type === 'ArrowFunctionExpression'){
-      return find_opt_axios(ast.callee.body, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
     //urlが変数の場合 opt calle
     if(callee_flag === 1){
 
@@ -1658,10 +1539,6 @@ function find_opt_axios(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
   if (ast.type === 'VariableDeclarator') {
 
     return loop_opt_axios(ast.init, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if(ast.type === 'EmptyStatement'){
-    return [param0, param1, opt_flag];
   }
 
   return null;
@@ -1793,10 +1670,6 @@ function find_param_axios(ast, pay_flag, callee_flag, opt_flag, info_flag, param
         }
         */
       }
-    }
-
-    if (ast.callee.type === 'ArrowFunctionExpression'){
-      return find_param_axios(ast.callee.body, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
     }
 
     //paramが変数の場合 opt calle
@@ -1943,10 +1816,6 @@ function find_param_axios(ast, pay_flag, callee_flag, opt_flag, info_flag, param
     return [param0, param1, opt_flag];
   }
 
-  if(ast.type === 'EmptyStatement'){
-    return [param0, param1, opt_flag];
-  }
-
   return null;
 }
 
@@ -1990,959 +1859,6 @@ function loop_param_axios(ast, pay_flag, callee_flag, opt_flag, info_flag, param
 }
 
 
-/*request*/
-function find_url_request(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
-  if (ast === null){
-
-    return null;
-  }
-
-  if (ast.type === 'BlockStatement') { // 複数行の中身
-    /*url_Initialへ*/
-    return loop_url_request(ast, pay_flag, callee_flag, opt_flag, param0, param1);;
-  }
-
-  if (ast.type === 'ExpressionStatement') {
-    return find_url_request(ast.expression, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if (ast.type === 'VariableDeclaration') { // 代入式
-    if (ast.kind === 'var' || ast.kind === 'const' || ast.kind === 'let') {
-      if(ast.declarations[0].id.name === param0 && opt_flag === 1){
-        /*検出*/
-        opt_flag = 3;
-        let tmp = find_url_request(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
-
-        /*ast.declarations[0].init以下の値を取得する
-        BinaryExpressionか様々なやつ*/
-        param0 = tmp[0] //内容
-        param1 = tmp[1] //型
-        opt_flag = tmp[2]
-
-        return [param0, param1, opt_flag];
-      }else{
-        let tmp = find_url_request(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
-
-        if(tmp === null){
-          return [param0, param1, opt_flag];
-        }
-
-        return tmp;
-      }
-    }
-  }
-
-  if (ast.type === 'CallExpression') { // 関数呼び出し
-
-    if (ast.callee.type === 'StaticMemberExpression'){
-
-      return loop_url_request(ast.arguments, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
-    if(ast.callee.type === 'MemberExpression'){
-      if(ast.callee.object.name === param0){
-
-        callee_flag = 1 // UrlFetchApp.fetchが呼ばれたことを指すフラグ
-
-        /*直接値が入っている場合*/
-        if(ast.arguments[0].type === 'Literal' ) {
-          /*urlを取得*/
-          param0 = ast.arguments[0].value
-          param1 = undefined;
-          opt_flag = undefined;
-
-          /*UrlFetchAppのLiteral value:url をreturn*/
-          return [param0, param1, opt_flag];
-        }
-
-        if(ast.arguments[0].type === 'BinaryExpression' || ast.arguments[0].type === 'Identifier'){
-
-          /*url発見*/
-          opt_flag = 3;
-
-          let tmp = find_url_request(ast.arguments[0], pay_flag, callee_flag, opt_flag, param0, param1);
-
-          /*urlを取得*/
-          param0 = tmp[0];
-          param1 = tmp[1];
-          opt_flag = 1;
-
-          /*UrlFetchAppのLiteral value:url をreturn*/
-          return [param0, param1, opt_flag];
-        }
-      }
-    }
-
-    if (ast.callee.type === 'ArrowFunctionExpression'){
-      return find_url_request(ast.callee.body, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
-    //urlが変数の場合 opt calle
-    if(ast.callee.name === param0 && opt_flag === 1){
-
-      /*変数発見*/
-      opt_flag = 3;
-
-      param0 = ast.arguments[0].name
-      param1 = ast.arguments[0].type
-
-      /*UrlFetchAppのIdentifer name:url をreturn*/
-      return [param0, param1, opt_flag];
-    }
-
-    return [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'FunctionDeclaration') { // ユーザ関数呼び出し
-
-    return find_url_request(ast.body, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-
-  /*URL*/
-  if (ast.type === 'BinaryExpression') { // +,-などの計算式
-    const left = find_url_request(ast.left, pay_flag, callee_flag, opt_flag, param0, param1);
-    const right = find_url_request(ast.right, pay_flag, callee_flag, opt_flag, param0, param1);
-
-    if(left == null || right == null){
-      return null;
-    }else{
-      if (left[1] === undefined && left[2] === undefined) {
-        var leftVar = left[0];
-        // ここで myVar を使う
-      }
-
-      if (right[1] === undefined && right[2] === undefined) {
-        var rightVar = right[0];
-        // ここで myVar を使う
-      }
-
-      return [leftVar + ast.operator + rightVar];
-    }
-  }
-
-  if (ast.type === 'Literal') { // 文字・数字
-    if(opt_flag === 3){
-      //return ast.value;
-      return [ast.value, undefined, undefined];
-    }
-
-    return null;
-  }
-
-  if (ast.type === 'Identifier') {
-    if(opt_flag === 3){
-
-      return [ast.name, undefined, undefined];
-    }
-
-    return null;
-  }
-
-
-  if (ast.type === 'SwitchStatement') {
-
-    return [param0, param1, opt_flag];
-  }
-
-
-  /*if*/
-  if (ast.type === 'IfStatement'){
-
-    return [param0, param1, opt_flag];
-  }
-
-  /*try*/
-  if (ast.type === 'TryStatement') {
-    /*url_Initialへ*/
-    return loop_url_request(ast.block, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if (ast.type === 'AwaitExpression'){
-
-    return find_url_request(ast.argument, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if (ast.type === 'VariableDeclarator') {
-
-    return loop_url_request(ast.init, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if (ast.type === 'ObjectExpression') {
-    if(opt_flag === 3){
-      for (let i = ast.properties.length - 1; i >= 0; i--) {
-
-        var tmp = find_url_request(ast.properties[i], pay_flag, callee_flag, opt_flag, param0, param1);
-
-        if (tmp === null) {
-          return [param0, param1, opt_flag];
-        }
-
-        /*
-        スキップするコード追加
-        */
-        param0 = tmp[0]
-        param1 = tmp[1]
-        opt_flag = tmp[2]
-        /*return後*/
-        /*変数が見つかったときに探索をスキップ*/
-        if (opt_flag === undefined || opt_flag === 4) {
-          break
-        }
-      }
-    }
-
-
-    return [param0, param1, opt_flag];
-  }
-
-
-  if (ast.type === 'Property' && ast.kind === 'init') {
-    if(opt_flag === 3){
-      if (ast.key.type === 'Identifier' && (ast.key.name === 'url' || ast.key.name === 'uri')) {
-        //if(param0 === ast.key.value){
-          /*
-          param0 = ast.key.value;
-          param1 = ast.value.value;
-          opt_flag = undefined;
-          */
-
-          let tmp = find_url_request(ast.value, pay_flag, callee_flag, opt_flag, param0, param1);
-
-          param0 = tmp[0];
-          param1 = tmp[1];
-          opt_flag = undefined;
-
-          return [param0, param1, opt_flag];
-        //}
-      }
-    }
-
-    return [param0, param1, opt_flag];
-  }
-
-  if(ast.type === 'EmptyStatement'){
-    return [param0, param1, opt_flag];
-  }
-
-  return null;
-}
-
-function loop_url_request(ast, pay_flag, callee_flag, opt_flag, param0, param1){
-  /*Initialization*/
-  var param = [param0, param1, ''];
-
-  let cnt = ast.body.length - 1;
-  let i = 0;
-
-  while(ast.body[i + cnt]){
-    let line = ast.body[i + cnt];
-
-    var tmp = find_url_request(line, pay_flag, callee_flag, opt_flag, param[0], param[1]);
-
-    //return後
-    if(tmp[0] === undefined){
-      param = ['', '', ''];
-
-    }else{
-      param = [tmp[0], tmp[1], tmp[2]];
-      url_source = tmp[0]
-      pay_flag = tmp[2];
-      opt_flag = tmp[2];
-
-      //url変数が見つかったときに探索をスキップ
-      if (opt_flag === undefined) {
-        return param;
-      }
-    }
-
-
-
-    i--;
-
-    /*発見できなかった場合*/
-    if((i + cnt) < 0){
-      return param = [tmp[0], tmp[1], 1];
-    }
-  }
-}
-
-function find_opt_request(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
-  if (ast === null){
-
-    return null;
-  }
-
-  if (ast.type === 'BlockStatement') { // 複数行の中身
-    /*url_Initialへ*/
-    return loop_opt_request(ast, pay_flag, callee_flag, opt_flag, param0, param1);;
-  }
-
-  if (ast.type === 'ExpressionStatement') {
-    return find_opt_request(ast.expression, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if (ast.type === 'VariableDeclaration') { // 代入式
-    if (ast.kind === 'var' || ast.kind === 'const' || ast.kind === 'let') {
-      if(ast.declarations[0].id.name === param0 && opt_flag === 1){
-        /*検出*/
-        /*
-        opt_flag = 3;
-        let tmp = find_opt_request(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
-
-        ast.declarations[0].init以下の値を取得する
-        BinaryExpressionか様々なやつ
-        param0 = tmp[0] //内容
-        param1 = tmp[1] //型
-        opt_flag = tmp[2]
-        */
-        param0 = ast.declarations[0].id.name
-        param1 = ast.declarations[0].id.type
-        opt_flag = 3;
-
-        return [param0, param1, opt_flag];
-      }else{
-        let tmp = find_opt_request(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
-
-        if(tmp === null){
-          return [param0, param1, opt_flag];
-        }
-
-        return tmp;
-      }
-    }
-  }
-
-  if (ast.type === 'CallExpression') { // 関数呼び出し
-
-    if (ast.callee.type === 'StaticMemberExpression'){
-
-      return loop_opt_request(ast.arguments, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
-    if(ast.callee.type === 'MemberExpression'){
-      if(ast.callee.object.name === param0){
-
-        callee_flag = 1 // UrlFetchApp.fetchが呼ばれたことを指すフラグ
-
-        /*直接値が入っている場合*/
-        if(ast.arguments[0].type === 'Literal' ) {
-          /*urlを取得*/
-          param0 = ast.arguments[0].value
-          param1 = undefined;
-          opt_flag = undefined;
-
-          /*UrlFetchAppのLiteral value:url をreturn*/
-          return [param0, param1, opt_flag];
-        }
-
-        if(ast.arguments[0].type === 'BinaryExpression' || ast.arguments[0].type === 'Identifier'){
-
-          /*url発見*/
-          opt_flag = 3;
-
-          let tmp = find_opt_request(ast.arguments[0], pay_flag, callee_flag, opt_flag, param0, param1);
-
-          /*urlを取得*/
-          param0 = tmp[0];
-          param1 = tmp[1];
-          opt_flag = 1;
-
-          /*UrlFetchAppのLiteral value:url をreturn*/
-          return [param0, param1, opt_flag];
-        }
-      }
-    }
-
-    if (ast.callee.type === 'ArrowFunctionExpression'){
-      return find_opt_request(ast.callee.body, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
-    //urlが変数の場合 opt calle
-    if(ast.callee.name === param0 && opt_flag === 1){
-
-      /*変数発見*/
-      opt_flag = 3;
-
-      param0 = ast.arguments[0].name
-      param1 = ast.arguments[0].type
-
-      /*UrlFetchAppのIdentifer name:url をreturn*/
-      return [param0, param1, opt_flag];
-    }
-
-    return [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'FunctionDeclaration') { // ユーザ関数呼び出し
-
-    return find_opt_request(ast.body, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-
-  /*URL*/
-  if (ast.type === 'BinaryExpression') { // +,-などの計算式
-    const left = find_opt_request(ast.left, pay_flag, callee_flag, opt_flag, param0, param1);
-    const right = find_opt_request(ast.right, pay_flag, callee_flag, opt_flag, param0, param1);
-
-    if(left == null || right == null){
-      return null;
-    }else{
-      if (left[1] === undefined && left[2] === undefined) {
-        var leftVar = left[0];
-        // ここで myVar を使う
-      }
-
-      if (right[1] === undefined && right[2] === undefined) {
-        var rightVar = right[0];
-        // ここで myVar を使う
-      }
-
-      return [leftVar + ast.operator + rightVar];
-    }
-  }
-
-  if (ast.type === 'Literal') { // 文字・数字
-    if(opt_flag === 3){
-      //return ast.value;
-      return [ast.value, undefined, undefined];
-    }
-
-    return null;
-  }
-
-  if (ast.type === 'Identifier') {
-    if(opt_flag === 3){
-
-      return [ast.name, undefined, undefined];
-    }
-
-    return null;
-  }
-
-
-  if (ast.type === 'SwitchStatement') {
-
-    return [param0, param1, opt_flag];
-  }
-
-
-  /*if*/
-  if (ast.type === 'IfStatement'){
-
-    return [param0, param1, opt_flag];
-  }
-
-  /*try*/
-  if (ast.type === 'TryStatement') {
-    /*url_Initialへ*/
-    return loop_opt_request(ast.block, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if (ast.type === 'AwaitExpression'){
-
-    return find_opt_request(ast.argument, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if (ast.type === 'VariableDeclarator') {
-
-    return loop_opt_request(ast.init, pay_flag, callee_flag, opt_flag, param0, param1);
-  }
-
-  if (ast.type === 'ObjectExpression') {
-    if(opt_flag === 3){
-      for (let i = ast.properties.length - 1; i >= 0; i--) {
-
-        var tmp = find_opt_request(ast.properties[i], pay_flag, callee_flag, opt_flag, param0, param1);
-
-        if (tmp === null) {
-          return [param0, param1, opt_flag];
-        }
-
-        /*
-        スキップするコード追加
-        */
-        param0 = tmp[0]
-        param1 = tmp[1]
-        opt_flag = tmp[2]
-        /*return後*/
-        /*変数が見つかったときに探索をスキップ*/
-        if (opt_flag === undefined || opt_flag === 4) {
-          break
-        }
-      }
-    }
-
-
-    return [param0, param1, opt_flag];
-  }
-
-
-  if (ast.type === 'Property' && ast.kind === 'init') {
-    if(opt_flag === 3){
-      if (ast.key.type === 'Identifier' && ast.key.name.toLowerCase() === 'url') {
-        //if(param0 === ast.key.value){
-          /*
-          param0 = ast.key.value;
-          param1 = ast.value.value;
-          opt_flag = undefined;
-          */
-
-          let tmp = find_opt_request(ast.value, pay_flag, callee_flag, opt_flag, param0, param1);
-
-          param0 = tmp[0];
-          param1 = tmp[1];
-          opt_flag = undefined;
-
-          return [param0, param1, opt_flag];
-        //}
-      }
-    }
-
-    return [param0, param1, opt_flag];
-  }
-
-  if(ast.type === 'EmptyStatement'){
-    return [param0, param1, opt_flag];
-  }
-
-  return null;
-}
-
-function loop_opt_request(ast, pay_flag, callee_flag, opt_flag, param0, param1){
-  /*Initialization*/
-  var param = [param0, param1, ''];
-
-  let cnt = ast.body.length - 1;
-  let i = 0;
-
-  while(ast.body[i + cnt]){
-    let line = ast.body[i + cnt];
-
-    var tmp = find_opt_request(line, pay_flag, callee_flag, opt_flag, param[0], param[1]);
-
-    //return後
-    if(tmp[0] === undefined){
-      param = ['', '', ''];
-
-    }else{
-      param = [tmp[0], tmp[1], tmp[2]];
-      opt_source = tmp[0]
-      pay_flag = tmp[2];
-      opt_flag = tmp[2];
-
-      /*option変数が見つかったときに探索をスキップ*/
-      if(opt_flag === 3){
-        /*深さ情報*/
-        return param;
-      }
-    }
-
-
-
-    i--;
-
-    /*発見できなかった場合*/
-    if((i + cnt) < 0){
-      return tmp;
-    }
-  }
-}
-
-function find_param_request(ast, pay_flag, callee_flag, opt_flag, info_flag, param0, param1) {
-  if (ast === null){
-    return null;
-  }
-
-
-  if (ast.type === 'BlockStatement') { // 複数行の中身
-    return loop_param_request(ast, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-  }
-
-  if (ast.type === 'ExpressionStatement') {
-    return find_param_request(ast.expression, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-  }
-
-  if (ast.type === 'VariableDeclaration') { // 代入式
-    if (ast.kind === 'var' || ast.kind === 'const' || ast.kind === 'let') {
-
-
-      if(ast.declarations[0].id.name === param0 && (opt_flag === 2 || opt_flag === 4)){
-        /*検出*/
-        /*
-        param0 = ast.declarations[0].id.name
-        param1 = ast.declarations[0].id.name
-        */
-       //一致変数見つけた
-       if(opt_flag === 2){
-          opt_flag = 3;
-       }
-
-        //return [param0, param1, opt_flag];
-      //} else {
-        let tmp = find_param_request(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-
-        if (tmp === null) {
-          return [param0, param1, opt_flag];
-        }
-
-        return tmp;
-
-
-
-      } else if (ast.declarations[0].init.type === 'AwaitExpression') {
-        /*fetchがあると信じて*/
-        let tmp = find_param_request(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-
-        if (tmp === null) {
-          return [param0, param1, opt_flag];
-        }
-
-        return tmp;
-
-      }else{
-
-        return [param0, param1, opt_flag];
-      }
-
-
-    }
-  }
-
-  if (ast.type === 'CallExpression') { // 関数呼び出し
-
-    if (ast.callee.type === 'StaticMemberExpression'){
-
-      return loop_param_request(ast.arguments, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-    }
-
-    if(ast.callee.type === 'MemberExpression'){
-      if(ast.callee.object.name === param0){
-
-        callee_flag = 1 // UrlFetchApp.fetchが呼ばれたことを指すフラグ
-
-        /*直接値が入っている場合*/
-        if(ast.arguments[0].type === 'Literal' ) {
-          /*urlを取得*/
-          param0 = ast.arguments[0].value
-          param1 = undefined;
-          opt_flag = undefined;
-
-          /*UrlFetchAppのLiteral value:url をreturn*/
-          return [param0, param1, opt_flag];
-        }
-
-        if(ast.arguments[0].type === 'BinaryExpression' || ast.arguments[0].type === 'Identifier'){
-
-          /*url発見*/
-          opt_flag = 3;
-
-          let tmp = find_param_request(ast.arguments[0], pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-
-          /*urlを取得*/
-          param0 = tmp[0];
-          param1 = tmp[1];
-          opt_flag = tmp[2];
-          //opt_flag = 1;
-
-          /*UrlFetchAppのLiteral value:url をreturn*/
-          return [param0, param1, opt_flag];
-        }
-      }
-    }
-
-    if (ast.callee.type === 'ArrowFunctionExpression'){
-      return find_param_request(ast.callee.body, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-    }
-
-    if(ast.callee.name === param0 && opt_flag === 1){
-      opt_flag = 2
-      callee_flag = 0
-      /*Get 'options' */
-      param0 = ast.arguments[0].name
-      param1 = ast.arguments[0].type
-
-      /*UrlFetchAppのIdentifer name:options をreturn*/
-      return [param0, param1, opt_flag];
-
-    }else if (opt_flag === 3){
-      if(ast.callee.object.type === 'Identifier' && ast.callee.property.type === 'Identifier') {
-        //JSON.parse対策
-        //JSON.parse内の引数を探索
-        return find_param_request(ast.arguments[0], pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-      }
-    }
-
-
-    return [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'FunctionDeclaration') { // ユーザ関数呼び出し
-    return find_param_request(ast.body, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-  }
-
-
-  /*URL*/
-  if (ast.type === 'BinaryExpression') { // +,-などの計算式
-    const left = find_opt_request(ast.left, pay_flag, callee_flag, opt_flag, param0, param1);
-    const right = find_opt_request(ast.right, pay_flag, callee_flag, opt_flag, param0, param1);
-
-    if(left == null || right == null){
-      return null;
-    }else{
-      if (left[1] === undefined && left[2] === undefined) {
-        var leftVar = left[0];
-        // ここで myVar を使う
-      }
-
-      if (right[1] === undefined && right[2] === undefined) {
-        var rightVar = right[0];
-        // ここで myVar を使う
-      }
-
-      return [leftVar + ast.operator + rightVar];
-    }
-  }
-
-  if (ast.type === 'Literal'){ // 文字・数字
-
-    if(opt_flag === 3 && info_flag === 2){
-      param0 = ast.key.value + ',' + ast.value.value;
-      param1 = true;
-      opt_flag = undefined;
-
-      return [param0, param1, opt_flag];
-    }
-
-
-    if(opt_flag === 3){
-      //[ast.value, undefined, undefined];
-      return ast.value;
-    }
-
-    return [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'Identifier' || ast.id === 'Identifier'){
-    if(opt_flag === 3){
-      /*
-      if(info_flag === 2){
-        opt_flag = 4;
-
-        return [ast.name, param1, opt_flag];
-      }
-      */
-      return [ast.name, undefined, 2];
-    }
-
-    return null;
-  }
-
-
-  if (ast.type === 'SwitchStatement') {
-
-    for (let i = ast.cases.length - 1; i >= 0; i--) {
-
-      var tmp = find_param_request(ast.cases[i], pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-
-    }
-    return [param0, param1, opt_flag];
-  }
-
-
-  if (ast.type === 'SwitchCase') {
-
-    console.log('')
-
-    return [param0, param1, opt_flag];
-  }
-
-
-  /*option 項目探索*/
-  if (ast.type === 'ObjectExpression'){
-    for (let i = ast.properties.length -1; i >= 0; i--){
-
-      var tmp = find_param_request(ast.properties[i], pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-
-      if(tmp === null){
-        return [param0, param1, opt_flag];
-      }
-
-      /*
-      スキップするコード追加
-      */
-      param0 = tmp[0]
-      param1 = tmp[1]
-      opt_flag = tmp[2]
-      /*return後*/
-      /*変数が見つかったときに探索をスキップ*/
-      if(opt_flag === undefined || opt_flag === 4){
-        break
-      }
-    }
-
-
-
-    return [param0, param1, opt_flag];
-  }
-
-
-
-  if(ast.type === 'Property' && ast.kind === 'init'){
-
-    /*3項目 method, headers, payload*/
-    if (ast.key.name === 'method' && opt_flag === 3 && info_flag === 0) {
-
-      /*項目見つかった*/
-      opt_flag = 3;
-
-      var tmp = find_param_request(ast.value, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-
-      if(tmp === null){
-
-        return [param0, param1, opt_flag];
-      }else{
-        param0 = tmp;
-        param1 = true;
-        opt_flag = undefined;
-
-        return [param0, param1, opt_flag];
-      }
-
-    } else if (ast.key.name === 'headers' && opt_flag === 3 && info_flag === 1) {
-
-      opt_flag = 3;
-
-      var tmp = find_param_request(ast.value, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-
-      if(tmp === null){
-
-        return [param0, param1, opt_flag];
-      }else{
-        param0 = tmp;
-        param1 = true;
-        opt_flag = undefined;
-
-        return [param0, param1, opt_flag];
-      }
-
-    } else if (ast.key.name === 'form' && opt_flag === 3 && info_flag === 2) {
-
-      opt_flag = 3;
-
-      //(ast.value.typeがIdentifierである場合対応する変数を探しに行く)
-      //'payload'が入っている変数名の特定
-      var tmp = find_param_request(ast.value, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-
-      if(tmp === null){
-
-        return [param0, param1, opt_flag];
-
-        //変数名を対象に変更
-      }else if(tmp[2] === 4){
-        param0 = tmp[0];
-        param1 = tmp[1];
-        opt_flag = tmp[2];
-
-
-        return [param0, param1, opt_flag];
-      }else{
-        param0 = tmp[0];
-        param1 = true;
-        opt_flag = undefined;
-
-        return [param0, param1, opt_flag];
-      }
-
-      //changed
-    }else{
-      if((opt_flag === 4 || opt_flag === 3) && info_flag === 2 ){
-        if (ast.value.type === 'Literal' || ast.value.type === 'Identifier'){
-          /*
-          param0 = ast.key.name;
-          param1 = ast.value.value;
-          opt_flag = undefined;
-          */
-          param0 = ast.key.value + ',' + ast.value.value;
-          param1 = true;
-          opt_flag = undefined;
-
-          return [param0, param1, opt_flag];
-        }
-      }
-    }
-
-    return [param0, param1, opt_flag];
-  }
-
-  /*if*/
-  if (ast.type === 'IfStatement'){
-    return [param0, param1, opt_flag];
-  }
-
-  /*try*/
-  if (ast.type === 'TryStatement') {
-
-    return loop_param_request(ast.block, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-  }
-
-  if (ast.type === 'AwaitExpression'){
-
-    return find_param_request(ast.argument, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-  }
-
-  if (ast.type === 'VariableDeclarator') {
-
-    return loop_param_request(ast.init, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-  }
-
-  if(ast.type === 'EmptyStatement'){
-    return [param0, param1, opt_flag];
-  }
-
-
-  return null;
-}
-
-function loop_param_request(ast, pay_flag, callee_flag, opt_flag, info_flag, param0, param1){
-  /*Initialization*/
-  var param = [param0, param1, ''];
-
-  let cnt = ast.body.length - 1;
-  let i = 0;
-
-  while(ast.body[i + cnt]){
-    let line = ast.body[i + cnt];
-
-    var tmp = find_param_request(line, pay_flag, callee_flag, opt_flag,  info_flag, param[0], param[1]);
-
-    //return後
-    if (tmp === undefined || tmp === null) {
-      param = ['', '', ''];
-
-    } else {
-      param = [tmp[0], tmp[1], tmp[2]];
-      source = tmp[0]
-      pay_flag = tmp[2];
-      opt_flag = tmp[2];
-    }
-    //url変数が見つかったときに探索をスキップ
-    if(opt_flag === undefined && tmp[1] === true){
-      return param;
-    }
-
-    i--;
-
-    //変数が見つからない場合
-    if ((i + cnt) < 0) {
-      return param = [tmp[0], false, tmp[2]];
-      //return param = [tmp[0], false, 1];
-    }
-  }
-}
-
-
-
 /*URL*/
 function url_initial(ast, json, env, literal){
   let logic_flag = [false, 0]
@@ -2968,10 +1884,6 @@ function url_initial(ast, json, env, literal){
 
   if(env === 'axios'){
     prm = loop_url_axios(ast, pay_flag, callee_flag, 1, literal, param1);
-  }
-
-  if(env === 'request'){
-    prm = loop_url_request(ast, pay_flag, callee_flag, 1, literal, param1);
   }
 
   if(env === 'GoogleAppScript'){
@@ -3049,7 +1961,7 @@ function url_initial(ast, json, env, literal){
 }
 
 function find_url(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
-  if (ast === null || ast === undefined){
+  if (ast === null){
 
     return null;
   }
@@ -3133,14 +2045,7 @@ function find_url(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
       } else if (ast.callee.object.type === 'Identifier' && ast.callee.property.type === 'Identifier'){
         /*JSON.parse対策*/
         /*JSON.parse内の引数を探索*/
-
-        let tmp = find_url(ast.arguments[0], pay_flag, callee_flag, opt_flag, param0, param1);
-
-        if(tmp === null){
-          return [param0, param1, opt_flag];
-        }
-
-        return tmp;
+        return find_url(ast.arguments[0], pay_flag, callee_flag, opt_flag, param0, param1);
       }
     }
 
@@ -3233,32 +2138,6 @@ function find_url(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
     return body;
   }
 
-  if (ast.type === 'ReturnStatement'){
-    if (ast.argument.type === 'CallExpression') {
-      return find_url(ast.argument, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
-    return  [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'NewExpression'){
-    return [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'AssignmentExpression') {
-    return [param0, param1, opt_flag];
-  }
-
-  if(ast.type === 'MemberExpression'){
-    if (opt_flag === 3) {
-      //return ast.value;
-
-      return [undefined, undefined, undefined];
-    }
-
-    return null;
-  }
-
   return null;
 }
 
@@ -3302,10 +2181,8 @@ function loop_url(ast, pay_flag, callee_flag, opt_flag, param0, param1){
 }
 
 function url_split(url) {
-
-  const str = completeSlash(url);
   /* / 区切りをする */
-  const parts = str.split('/');
+  const parts = url.split('/');
 
   const result = [];
 
@@ -3339,24 +2216,6 @@ function url_split(url) {
   return result;
 }
 
-function completeSlash(inputString) {
-  // 正規表現を使用して、文字列内に+が二つ含まれているか確認
-  const regex = /\+(.+?)\+/g;
-  const matches = inputString.match(regex);
-
-  if (matches) {
-    // 各一致した部分について処理を行う
-    matches.forEach(match => {
-      // undefined でなく、空でない場合にスラッシュを補完
-      const value = match.substring(1, match.length - 1);
-      const replacement = (value !== 'undefined' && value !== '') ? `+${value}+/` : match;
-      inputString = inputString.replace(match, replacement);
-    });
-  }
-
-  return inputString;
-}
-
 
 /*option*/
 function opt_initial(ast, env, literal){
@@ -3381,9 +2240,6 @@ function opt_initial(ast, env, literal){
     prm = loop_opt_axios(ast, pay_flag, callee_flag, 1, literal, param1);
   }
 
-  if(env === 'request'){
-    prm = loop_opt_request(ast, pay_flag, callee_flag, 1, literal, param1);
-  }
 
   if(env === 'GoogleAppScript'){
     prm = loop_opt(ast, pay_flag, callee_flag, opt_flag, param0, param1);
@@ -3408,7 +2264,7 @@ function opt_initial(ast, env, literal){
 }
 
 function find_opt(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
-  if (ast === null || ast === undefined){
+  if (ast === null){
     return null;
   }
 
@@ -3452,13 +2308,7 @@ function find_opt(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
       }else if (ast.callee.object.type === 'Identifier' && ast.callee.property.type === 'Identifier'){
         /*JSON.parse対策*/
         /*JSON.parse内の引数を探索*/
-        let tmp = find_opt(ast.arguments[0], pay_flag, callee_flag, opt_flag, param0, param1);
-
-        if(tmp === null){
-          return [param0, param1, opt_flag];
-        }
-
-        return tmp;
+        return find_opt(ast.arguments[0], pay_flag, callee_flag, opt_flag, param0, param1);
       }
     }
 
@@ -3541,22 +2391,6 @@ function find_opt(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
     return val;
   }
 
-
-  if (ast.type === 'ReturnStatement'){
-    if (ast.argument.type === 'CallExpression') {
-      return find_url(ast.argument, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
-    return  [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'NewExpression'){
-    return [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'AssignmentExpression') {
-    return [param0, param1, opt_flag];
-  }
 
   return null;
 }
@@ -3691,9 +2525,6 @@ function param_initial(ast, json, json_num, env, literal){
     prm = loop_param_axios(ast, pay_flag, callee_flag, 1, info_flag, literal, param1);
   }
 
-  if(env === 'request'){
-    prm = loop_param_request(ast, pay_flag, callee_flag, 1, info_flag, literal, param1);
-  }
 
   if(env === 'GoogleAppScript'){
     prm = loop_param(ast, info_flag);
@@ -3747,9 +2578,6 @@ function param_initial(ast, json, json_num, env, literal){
         prm = loop_param_axios(ast, pay_flag, callee_flag, 1, info_flag, literal, param1);
       }
 
-      if(env === 'request'){
-        prm = loop_param_request(ast, pay_flag, callee_flag, 1, info_flag, literal, param1);
-      }
 
       if(env === 'GoogleAppScript'){
         prm = loop_param(ast, info_flag);
@@ -3795,7 +2623,7 @@ function param_initial(ast, json, json_num, env, literal){
 }
 
 function find_param(ast, pay_flag, callee_flag, opt_flag, info_flag, param0, param1) {
-  if (ast === null || ast === undefined){
+  if (ast === null){
     return null;
   }
 
@@ -3874,13 +2702,7 @@ function find_param(ast, pay_flag, callee_flag, opt_flag, info_flag, param0, par
       }else if (ast.callee.object.type === 'Identifier' && ast.callee.property.type === 'Identifier'){
         /*JSON.parse対策*/
         /*JSON.parse内の引数を探索*/
-        let tmp =  find_param(ast.arguments[0], pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
-
-        if(tmp === null){
-          return [param0, param1, opt_flag];
-        }
-
-        return tmp;
+        return find_param(ast.arguments[0], pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
       }
     }
 
@@ -4092,30 +2914,6 @@ function find_param(ast, pay_flag, callee_flag, opt_flag, info_flag, param0, par
     return val;
   }
 
-  if (ast.type === 'ReturnStatement'){
-    if (ast.argument.type === 'CallExpression') {
-      return find_url(ast.argument, pay_flag, callee_flag, opt_flag, param0, param1);
-    }
-
-    return  [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'MemberExpression') {
-    return [param0, param1, opt_flag];
-  }
-
-
-  if (ast.type === 'NewExpression'){
-    return [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'AssignmentExpression') {
-    return [param0, param1, opt_flag];
-  }
-
-  if (ast.type === 'ForStatement') {
-    return [param0, param1, opt_flag];
-  }
 
   return null;
 }

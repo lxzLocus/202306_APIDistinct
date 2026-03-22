@@ -1,0 +1,1218 @@
+module.exports = analize_Prog;
+
+const fs = require('fs');
+
+
+// ASTの特定の識別子を置換し、エンドポイントの比較を行う関数
+function analize_Prog(ast) {
+  const jsonFilePath = 'E:/Files/workspace/202306/API_json/api_latest.json';
+  const jsonString = fs.readFileSync(jsonFilePath, 'utf8');
+  const baseJson = JSON.parse(jsonString);
+
+  /*tf, json_num*/
+  let url_logic = [false, null];
+  /*tf, Ident name*/
+  let opt_logic = [false, null];
+  /*tf, */
+  let param_logic = [false, null, false, false];
+
+  /*URL.fetch()*/
+  /*url有無*/
+  try{
+    url_logic = url_initial(ast, baseJson)
+
+  }catch(e){
+    /*変数対応しているがurlが一致しない*/
+    console.log('The url in the code you wrote is not listed in swagger or is wrong\n')
+
+    return [null, null, null, null, null, null, null, null];
+  }
+
+
+  if(url_logic[0] === true){
+
+    /*option有無*/
+    opt_logic = opt_initial(ast)
+    if(opt_logic[0] === true){
+
+
+      /*options内 + postData*/
+      try{
+        param_logic = param_initial(ast, baseJson, url_logic[1])
+        console.log('param_logic ', param_logic, '\n')
+
+        return[url_logic[0], url_logic[1], opt_logic[0], opt_logic[1], param_logic[0], param_logic[1], param_logic[2], param_logic[3]];
+
+      }catch(e){
+        param_logic = [false, null, false, false]
+        console.log('expection\n');
+
+        return[url_logic[0], url_logic[1], opt_logic[0], opt_logic[1], param_logic[0], param_logic[1], param_logic[2], param_logic[3]];
+      }
+
+    }else{
+      console.log('Can not found ', opt_logic[1],  '\n')
+
+      return[url_logic[0], url_logic[1], opt_logic[0], opt_logic[1], param_logic[0], param_logic[1], param_logic[2], param_logic[3]];
+    }
+
+  }else{
+    /*変数対応しているがurlが一致しない*/
+    console.log('The url in the code you wrote is not listed in swagger or is wrong\n')
+
+    return[url_logic[0], url_logic[1], opt_logic[0], opt_logic[1], param_logic[0], param_logic[1], param_logic[2], param_logic[3]];
+  }
+
+
+}
+
+
+
+
+
+/*URL*/
+function url_initial(ast, json){
+  let logic_flag = [false, 0]
+
+  /*Initialization*/
+  var pay_flag = 0
+  var callee_flag = 0
+  var opt_flag = 0
+  var param = ['', '', ''];
+
+  let url_source = null;
+  var url_source_split = null;
+  var url_json_split = null;
+  let cnt = 0;
+  let cnt_w = 0;
+
+  /*BlockStatement 要素数カウント*/
+  while (undefined != ast.body[0].body.body[cnt]) {
+    cnt++;
+  }
+
+  for (let i = cnt - 1; i >= 0; i--){
+    var tmp = find_url(ast.body[0].body.body[i], pay_flag, callee_flag, opt_flag, param[0], param[1]);
+
+    /*return後*/
+    param = [tmp[0], tmp[1], tmp[2]];
+    url_source = tmp[0]
+    pay_flag = tmp[2];
+    opt_flag = tmp[2];
+
+    /*url変数が見つかったときに探索をスキップ*/
+    if(opt_flag == undefined){
+      break
+    }
+  }
+
+  /*変数が見つからなかった場合*/
+  if(opt_flag == 1){
+    console.log('変数', url_source, 'が見つかりませんでした\n')
+
+    return [logic_flag[0], logic_flag[1]]
+
+  }else{
+
+    console.log('URL 変数検出\n')
+    console.log('url_source  :  ' + url_source, '\n')
+
+    url_source_split = url_split(url_source);
+
+    /*一致URLを探す*/
+    while (undefined != json.nature_apis.api[cnt_w]) {
+      var JsonEndpoint = json.nature_apis.api[cnt_w].endpoint
+
+
+      url_json_split = url_split(JsonEndpoint);
+
+      const minLength = Math.min(url_source_split.length, url_json_split.length);
+
+
+      /*配列を後ろから比較*/
+      for (let i = 0; i < minLength - 1; i++) {
+        if (url_source_split[url_source_split.length - 1 - i] == url_json_split[url_json_split.length - 1 - i]) {
+          /*一致*/
+          logic_flag[0] = true
+          /*jsonの何番目か*/
+          logic_flag[1] = cnt_w
+        } else {
+          logic_flag[0] = false
+          break
+        }
+      }
+
+      if (logic_flag[0] == true) {
+
+        let server_url_split = url_split(json.nature_apis.servers[0].url)
+
+        /*servers.urlが一致するか*/
+        for(let p = 0; p < server_url_split.length; p++){
+          if (url_source_split[p] != server_url_split[p]){
+
+            console.log('ベースURL 誤り\n')
+
+            break;
+          } else if (p == server_url_split.length-1){
+
+            console.log('URL 完全一致\n')
+          }
+        }
+
+        break;
+      }
+
+
+      cnt_w++;
+    }
+
+    /*一致の有無, apiリストの何番目か*/
+    return [logic_flag[0], logic_flag[1]]
+  }
+}
+
+function find_url(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
+  if (ast === null){
+
+    return null;
+  }
+
+  if (ast.type === 'BlockStatement') { // 複数行の中身
+    let val = find_url(ast);
+
+    return val;
+  }
+
+  if (ast.type === 'ExpressionStatement') {
+    return find_url(ast.expression, pay_flag, callee_flag, opt_flag, param0, param1);
+  }
+
+  if (ast.type === 'VariableDeclaration') { // 代入式
+    if (ast.kind === 'var' || ast.kind === 'const' || ast.kind === 'let') {
+      const body = find_url(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+      if(ast.declarations[0].id.name === param0 && opt_flag === 1){
+        /*検出*/
+        opt_flag = 3;
+        let tmp = find_url(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+        /*ast.declarations[0].init以下の値を取得する
+        BinaryExpressionか様々なやつ*/
+        param0 = tmp[0] //内容
+        param1 = tmp[1] //型
+        opt_flag = tmp[2]
+
+        return [param0, param1, opt_flag];
+      }else{
+        let tmp = find_url(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+        if(tmp === null){
+          return [param0, param1, opt_flag];
+        }
+
+        return tmp;
+      }
+    }
+  }
+
+  if (ast.type === 'CallExpression') { // 関数呼び出し
+    if(ast.callee.type === 'MemberExpression'){
+      if(ast.callee.object.name === 'UrlFetchApp' && ast.callee.property.name === 'fetch'){
+
+        callee_flag = 1 // UrlFetchApp.fetchが呼ばれたことを指すフラグ
+      }
+    }
+
+    if(callee_flag === 1){
+      opt_flag = 1
+      callee_flag = 0
+      param0 = ast.arguments[0].name
+      param1 = ast.arguments[0].type
+
+      /*UrlFetchAppのIdentifer name:url をreturn*/
+      return [param0, param1, opt_flag];
+    }
+
+    return [param0, param1, opt_flag];
+  }
+
+  if (ast.type === 'FunctionDeclaration') { // ユーザ関数呼び出し
+    const body = find_url(ast.body, pay_flag, callee_flag, opt_flag, param0, param1);
+
+    return body;
+  }
+
+
+  /*URL*/
+  if (ast.type === 'BinaryExpression') { // +,-などの計算式
+    const left = find_url(ast.left, pay_flag, callee_flag, opt_flag, param0, param1);
+    const right = find_url(ast.right, pay_flag, callee_flag, opt_flag, param0, param1);
+
+    if(left == null || right == null){
+      return null;
+    }else{
+      if (left[1] === undefined && left[2] === undefined) {
+        var leftVar = left[0];
+        // ここで myVar を使う
+      }
+
+      if (right[1] === undefined && right[2] === undefined) {
+        var rightVar = right[0];
+        // ここで myVar を使う
+      }
+
+      return [leftVar + ast.operator + rightVar];
+    }
+  }
+
+  if (ast.type === 'Literal') { // 文字・数字
+    if(opt_flag === 3){
+      //return ast.value;
+
+      return [ast.value, undefined, undefined];
+    }
+
+    return null;
+  }
+
+  if (ast.type === 'Identifier') {
+    if(opt_flag === 3){
+      return ast.name;
+    }
+
+    return null;
+  }
+
+
+  if (ast.type === 'SwitchStatement') {
+
+    return [param0, param1, opt_flag];
+  }
+
+
+
+  /*************
+
+  更に下層にノードがある ast.type はnullではなく
+  [param0, param1, opt_flag] ???????
+
+  **************/
+
+  return null;
+}
+
+function url_split_before(url){
+  /* / 区切りをする */
+  const parts = url.split('/');
+
+  const result = [];
+
+  let inTokenMode = false;
+  let dashCount = 0;
+
+  for (const part of parts) {
+    if (part.includes('{') || (part[0] === '+' && part[part.length - 1] === '+')) {
+      inTokenMode = true;
+      result.push('TOKEN');
+      continue;
+    }
+
+    // '-'のカウント
+    dashCount += (part.split('-').length - 1);
+
+    if (inTokenMode) {
+      inTokenMode = false;
+    }
+
+    if (dashCount === 4) {
+      result.push('TOKEN');
+      dashCount = 0; // カウントをリセット
+    } else if (part[0] === '+') {
+      result.push(part.slice(1)); // +を削除してpush
+    } else {
+      result.push(part);
+    }
+  }
+
+  return result;
+}
+
+
+function url_split(url) {
+  /* / 区切りをする */
+  const parts = url.split('/');
+
+  const result = [];
+
+  let inTokenMode = false;
+  let dashCount = 0;
+
+  for (const part of parts) {
+    if (part.includes('{') || (part[0] === '+' && part[part.length - 1] === '+') || /[^\x00-\x7F]/.test(part)) {
+      inTokenMode = true;
+      result.push('TOKEN');
+      continue;
+    }
+
+    // '-'のカウント
+    dashCount += (part.split('-').length - 1);
+
+    if (inTokenMode) {
+      inTokenMode = false;
+    }
+
+    if (dashCount === 4) {
+      result.push('TOKEN');
+      dashCount = 0; // カウントをリセット
+    } else if (part[0] === '+') {
+      result.push(part.slice(1)); // +を削除してpush
+    } else {
+      result.push(part);
+    }
+  }
+
+  return result;
+}
+
+
+/*option*/
+function opt_initial(ast){
+  let logic_flag = [false, '']
+
+  /*Initialization*/
+  var pay_flag = 0
+  var callee_flag = 0
+  var opt_flag = 0
+  var param = ['', '', ''];
+
+  let opt_source = null;
+  let cnt = 0;
+
+  /*BlockStatement 要素数カウント*/
+  while (undefined != ast.body[0].body.body[cnt]) {
+    cnt++;
+  }
+
+  for (let i = cnt - 1; i >= 0; i--){
+    var tmp = find_opt(ast.body[0].body.body[i], pay_flag, callee_flag, opt_flag, param[0], param[1]);
+
+    /*return後*/
+    param = [tmp[0], tmp[1], tmp[2]];
+    opt_source = tmp[0]
+    pay_flag = tmp[2];
+    opt_flag = tmp[2];
+
+    /*option変数が見つかったときに探索をスキップ*/
+    if(opt_flag == 3){
+      /*深さ情報*/
+      logic_flag[1] = opt_source
+
+      break
+    }
+  }
+
+
+  if(opt_flag == 3){
+    logic_flag[0] = true
+
+    console.log( opt_source, '変数検出\n')
+
+    return [logic_flag[0], logic_flag[1]]
+  }else{
+    console.log('変数', opt_source, 'が見つかりませんでした\n')
+
+    return [logic_flag[0], opt_source]
+  }
+}
+
+function find_opt(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
+  if (ast === null){
+    return null;
+  }
+
+
+  if (ast.type === 'BlockStatement') { // 複数行の中身
+    let val = find_opt(ast, pay_flag, callee_flag, opt_flag, param0, param1);
+
+    return val;
+  }
+
+  if (ast.type === 'ExpressionStatement') {
+    return find_opt(ast.expression, pay_flag, callee_flag, opt_flag, param0, param1);
+  }
+
+  if (ast.type === 'VariableDeclaration') { // 代入式
+    if (ast.kind === 'var' || ast.kind === 'const' || ast.kind === 'let') {
+      const body = find_opt(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+      if(ast.declarations[0].id.name === param0 && opt_flag === 1){
+        /*検出*/
+        param0 = ast.declarations[0].id.name //内容
+        param1 = ast.declarations[0].id.type //型
+        opt_flag = 3;
+
+        return [param0, param1, opt_flag];
+      }else{
+        let tmp = find_opt(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+        if(tmp === null){
+          return [param0, param1, opt_flag];
+        }
+
+        return tmp;
+      }
+    }
+  }
+
+  if (ast.type === 'CallExpression') { // 関数呼び出し
+    if(ast.callee.type === 'MemberExpression'){
+      if(ast.callee.object.name === 'UrlFetchApp' && ast.callee.property.name === 'fetch'){
+
+        callee_flag = 1 // UrlFetchApp.fetchが呼ばれたことを指すフラグ
+      }
+    }
+
+    if(callee_flag === 1){
+      opt_flag = 1
+      callee_flag = 0
+      param0 = ast.arguments[1].name
+      param1 = ast.arguments[1].type
+
+      /*UrlFetchAppのIdentifer name:url をreturn*/
+      return [param0, param1, opt_flag];
+    }
+
+    return [param0, param1, opt_flag];
+  }
+
+  if (ast.type === 'FunctionDeclaration') { // ユーザ関数呼び出し
+    const body = find_opt(ast.body, pay_flag, callee_flag, opt_flag, param0, param1);
+
+    return body;
+  }
+
+
+  /*URL*/
+  if (ast.type === 'BinaryExpression') { // +,-などの計算式
+    return [param0, param1, opt_flag];
+  }
+
+  if (ast.type === 'Literal') { // 文字・数字
+    if(opt_flag === 3){
+      return ast.value;
+    }
+
+    return null;
+  }
+
+  if (ast.type === 'Identifier') {
+    if(opt_flag === 3){
+      return ast.name;
+    }
+
+    return null;
+  }
+
+
+  if (ast.type === 'SwitchStatement') {
+
+    return [param0, param1, opt_flag];
+  }
+
+
+  /*option*/
+  if (ast.type === 'ObjectExpression'){
+    for (let i = ast.properties.length -1; i >= 0; i--){
+      let tmp = find_opt(ast.properties[i], pay_flag, callee_flag, opt_flag, param0, param1);
+
+      if(tmp === null){
+        return [param0, param1, opt_flag];
+      }
+    }
+
+    return tmp;
+  }
+
+
+  if(ast.type === 'Property' && ast.kind === 'init'){
+
+    /*
+    const body = find_opt(ast.key, pay_flag, callee_flag, opt_flag, param0, param1);
+
+    if (ast.key.value === param0 && opt_flag === 1){
+      //検出
+      opt_flag = 3;
+      let tmp = find_opt(ast.key, pay_flag, callee_flag, opt_flag, param0, param1);
+
+      //ast.key以下の値を取得する
+      //BinaryExpressionか様々なやつ
+      param0 = tmp[0] //内容
+      param1 = tmp[1] //型
+      opt_flag = tmp[2]
+
+      return [param0, param1, opt_flag];
+    }else{
+
+      return [param0, param1, opt_flag];
+    }
+
+
+    return [param0, param1, opt_flag];
+    */
+    return null;
+  }
+
+
+  /*************
+
+  更に下層にノードがある ast.type はnullではなく
+  [param0, param1, opt_flag] ???????
+
+  **************/
+
+  return null;
+}
+
+
+/*param*/
+function param_initial(ast, json, json_num){
+  /***** Preparation ******/
+
+  /*Get URL from API lists*/
+  let json_url = json.nature_apis.servers[0].url + json.nature_apis.api[json_num].endpoint;
+
+  /*Get method from API lists*/
+  let json_method = json.nature_apis.api[json_num].method;
+
+  /*Get headers from API lists*/
+  let json_headers = json.nature_apis.api[json_num].headers;
+
+
+  /*Get parameters from API lists*/
+  let json_parameter_flag = false;
+  let json_parameter = null;
+
+  if(json.nature_apis.api[json_num].parameters == null){
+    json_parameter_flag = false;
+  }else{
+    json_parameter_flag = true;
+    json_parameter = json.nature_apis.api[json_num].parameters[0].name;
+  }
+
+
+  /*Get requestBody from API lists*/
+  let json_payload_flag = false;
+  let json_payload = null;
+  let json_payload_schema = null;
+
+  if (json.nature_apis.api[json_num].requestBody == null){
+    json_payload_flag = false
+  }else{
+    json_payload_flag = true
+    json_payload = json.nature_apis.api[json_num].requestBody.content['application/x-www-form-urlencoded'].schema['$ref']
+    json_payload = json_payload.replace('/', '')
+    json_payload = json_payload.replace('/', '')
+    json_payload = json_payload.substr(json_payload.indexOf('/') + 1)
+
+    json_payload_schema = json.nature_apis.schemas[json_payload].properties
+
+  }
+
+
+  /*Get responses from API lists*/
+  let json_response_flag = false;
+  let json_response = null;
+
+  if (json.nature_apis.api[json_num].responses == null){
+    json_response_flag = false
+  }else{
+    json_response_flag = true
+    json_response = json.nature_apis.api[json_num].responses['200'].content['application/json'].schema['$ref']
+    json_response = json_response.replace('/', '')
+    json_response = json_response.replace('/', '')
+    json_response = json_response.substr(json_response.indexOf('/') + 1)
+  }
+
+
+  /**********************/
+
+  /*Initialization*/
+  let logic_flag = [false, null, false, false];
+
+  var pay_flag = 0;
+  var callee_flag = 0;
+  var opt_flag = 0;
+  let info_flag = null;
+  var param = ['', '', ''];
+
+  let cnt = 0;
+  let cnt_w = 0;
+
+  let source = null;
+
+
+
+  /*BlockStatement 要素数カウント*/
+  while (undefined != ast.body[0].body.body[cnt]) {
+    cnt++;
+  }
+
+
+
+  /*Get method from Source Code*/
+  info_flag = 0;
+  for (let i = cnt - 1; i >= 0; i--){
+    tmp = find_param(ast.body[0].body.body[i], pay_flag, callee_flag, opt_flag, info_flag, param[0], param[1]);
+
+
+    /*return後*/
+    param = [tmp[0], tmp[1], tmp[2]];
+    source = tmp[0]
+    pay_flag = tmp[2];
+    opt_flag = tmp[2];
+
+    /*変数が見つかったときに探索をスキップ*/
+    if(opt_flag === undefined && tmp[1] === true){
+      /*一致するかの判定*/
+      if (json_method.toLowerCase() === source.toLowerCase()){
+        console.log('method 一致\n')
+        logic_flag[0] = true;
+        logic_flag[1] = source;
+
+        opt_flag = 0;
+        tmp[1] = false;
+
+      }else{
+        console.log('method 不一致\n')
+        logic_flag[0] = false;
+        logic_flag[1] = false;
+
+        opt_flag = 0;
+        tmp[1] = false;
+      }
+
+      break
+    }
+  }
+
+
+  /*????????????????????????????????*/
+  /*Get parameters from Source Code*/
+  info_flag = 1;
+
+
+  /*Get payload from Source Code*/
+  info_flag = 2;
+  for (let i = cnt - 1; i >= 0; i--){
+    tmp = find_param(ast.body[0].body.body[i], pay_flag, callee_flag, opt_flag, info_flag, param[0], param[1]);
+
+
+    /*return後*/
+    param = [tmp[0], tmp[1], tmp[2]];
+    source = tmp[0]
+    pay_flag = tmp[2];
+    opt_flag = tmp[2];
+
+
+    /*変数が見つかったときに探索をスキップ*/
+    if(opt_flag === undefined && tmp[1] === true){
+
+      let objectNames = Object.keys(json_payload_schema);
+
+
+      var parts = source.split(',');
+
+      // 前部分を取得
+      var firstPart = parts[0];
+
+
+      // 変数と一致するオブジェクト名があるかどうかを大文字小文字を区別せずに検証
+      var isVariableMatched = objectNames.some(function (name) {
+        return name.toLowerCase() === firstPart.toLowerCase();
+      });
+
+      /*一致するかの判定*/
+      if (isVariableMatched){
+        console.log('payload 一致\n')
+        logic_flag[3] = true;
+      }else{
+        console.log('payload 不一致\n')
+        logic_flag[3] = false;
+      }
+      break
+    }
+
+  }
+
+  return logic_flag
+
+}
+
+function find_param(ast, pay_flag, callee_flag, opt_flag, info_flag, param0, param1) {
+  if (ast === null){
+    return null;
+  }
+
+
+  if (ast.type === 'BlockStatement') { // 複数行の中身
+    let val = find_param(ast, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+
+    return val;
+  }
+
+  if (ast.type === 'ExpressionStatement') {
+    return find_param(ast.expression, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+  }
+
+  if (ast.type === 'VariableDeclaration') { // 代入式
+    if (ast.kind === 'var' || ast.kind === 'const' || ast.kind === 'let') {
+
+      if(ast.declarations[0].id.name === param0 && opt_flag === 4 && info_flag === 2){
+        opt_flag = 5;
+      }
+
+      const body = find_param(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+
+      //////
+      param0 = body[0];
+      param1 = body[1];
+      opt_flag = body[2];
+
+      if(ast.declarations[0].id.name === param0 && opt_flag === 1 ){
+
+        if(body[2] === undefined){
+          param0 = body[0]
+          param1 = body[1]
+          opt_flag = body[2]
+
+          return [param0, param1, opt_flag];
+        }
+
+        /*検出*/
+        param0 = ast.declarations[0].id.name //内容
+        param1 = ast.declarations[0].id.type //型
+        opt_flag = 3;
+
+
+        /*項目探索*/
+        let tmp = find_param(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+
+        if(tmp === null){
+          return [param0, param1, opt_flag];
+        }
+
+        return [param0, param1, opt_flag];
+
+      }else{
+
+        if(opt_flag === 4 || opt_flag === undefined){
+          return [param0, param1, opt_flag];
+        }
+
+        let tmp = find_param(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+
+        if(tmp === null){
+          return [param0, param1, opt_flag];
+        }
+
+        return tmp;
+      }
+    }
+  }
+
+  if (ast.type === 'CallExpression') { // 関数呼び出し
+    if(ast.callee.type === 'MemberExpression'){
+      if(ast.callee.object.name === 'UrlFetchApp' && ast.callee.property.name === 'fetch'){
+
+        callee_flag = 1 // UrlFetchApp.fetchが呼ばれたことを指すフラグ
+      }
+    }
+
+    if(callee_flag === 1){
+      opt_flag = 1
+      callee_flag = 0
+      /*Get 'options' */
+      param0 = ast.arguments[1].name
+      param1 = ast.arguments[1].type
+
+      /*UrlFetchAppのIdentifer name:options をreturn*/
+      return [param0, param1, opt_flag];
+    }
+
+    return [param0, param1, opt_flag];
+  }
+
+  if (ast.type === 'FunctionDeclaration') { // ユーザ関数呼び出し
+    const body = find_param(ast.body, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+
+    return body;
+  }
+
+
+  /*URL*/
+  if (ast.type === 'BinaryExpression') { // +,-などの計算式
+    return [param0, param1, opt_flag];
+  }
+
+  if (ast.type === 'Literal'){ // 文字・数字
+
+    if(opt_flag === 3 && info_flag === 2){
+      param0 = ast.key.value + ',' + ast.value.value;
+      param1 = true;
+      opt_flag = undefined;
+
+      return [param0, param1, opt_flag];
+    }
+
+
+    if(opt_flag === 3){
+      return ast.value;
+    }
+
+    return [param0, param1, opt_flag];
+  }
+
+  if (ast.type === 'Identifier' || ast.id === 'Identifier'){
+    if(opt_flag === 3){
+      if(info_flag === 2){
+        opt_flag = 4;
+
+        return [ast.name, param1, opt_flag];
+      }
+      return ast.name;
+    }
+
+    return null;
+  }
+
+
+  if (ast.type === 'SwitchStatement') {
+
+    console.log('')
+
+    for (let i = ast.cases.length - 1; i >= 0; i--) {
+
+      var tmp = find_param(ast.cases[i], pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+
+    }
+    return [param0, param1, opt_flag];
+  }
+
+
+  if (ast.type === 'SwitchCase') {
+
+    console.log('')
+
+    return [param0, param1, opt_flag];
+  }
+
+
+  /*option 項目探索*/
+  if (ast.type === 'ObjectExpression'){
+    for (let i = ast.properties.length -1; i >= 0; i--){
+
+      var tmp = find_param(ast.properties[i], pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+
+      if(tmp === null){
+        return [param0, param1, opt_flag];
+      }
+
+      /*
+      スキップするコード追加
+      */
+      param0 = tmp[0]
+      param1 = tmp[1]
+      opt_flag = tmp[2]
+      /*return後*/
+      /*変数が見つかったときに探索をスキップ*/
+      if(opt_flag === undefined || opt_flag === 4){
+        break
+      }
+    }
+
+
+
+    return [param0, param1, opt_flag];
+  }
+
+
+
+  if(ast.type === 'Property' && ast.kind === 'init'){
+
+    /*3項目 method, headers, payload*/
+    if (ast.key.value === 'method' && info_flag === 0) {
+
+      /*項目見つかった*/
+      opt_flag = 3;
+
+      var tmp = find_param(ast.value, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+
+      if(tmp === null){
+
+        return [param0, param1, opt_flag];
+      }else{
+        param0 = tmp;
+        param1 = true;
+        opt_flag = undefined;
+
+        return [param0, param1, opt_flag];
+      }
+
+    }else if(ast.key.value === 'headers' && info_flag === 1) {
+
+      opt_flag = 3;
+
+      var tmp = find_param(ast.value, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+
+      if(tmp === null){
+
+        return [param0, param1, opt_flag];
+      }else{
+        param0 = tmp;
+        param1 = true;
+        opt_flag = undefined;
+
+        return [param0, param1, opt_flag];
+      }
+
+    }else if(ast.key.value === 'payload' && info_flag === 2) {
+
+      opt_flag = 3;
+
+      //(ast.value.typeがIdentifierである場合対応する変数を探しに行く)
+      //'payload'が入っている変数名の特定
+      var tmp = find_param(ast.value, pay_flag, callee_flag, opt_flag, info_flag, param0, param1);
+
+      if(tmp === null){
+
+        return [param0, param1, opt_flag];
+
+        //変数名を対象に変更
+      }else if(tmp[2] === 4){
+        param0 = tmp[0];
+        param1 = tmp[1];
+        opt_flag = tmp[2];
+
+
+        return [param0, param1, opt_flag];
+      }else{
+        param0 = tmp[0];
+        param1 = true;
+        opt_flag = undefined;
+
+        return [param0, param1, opt_flag];
+      }
+
+      //changed
+    }else{
+      if((opt_flag === 5 || opt_flag === 3) && info_flag === 2 ){
+        if (ast.value.type === 'Literal' || ast.value.type === 'Identifier'){
+          /*
+          param0 = ast.key.value;
+          param1 = ast.value.value;
+          opt_flag = undefined;
+          */
+          param0 = ast.key.value + ',' + ast.value.value;
+          param1 = true;
+          opt_flag = undefined;
+
+          return [param0, param1, opt_flag];
+        }
+      }
+    }
+
+    return [param0, param1, opt_flag];
+  }
+
+  return null;
+}
+
+
+/*headers*/
+function header_initial(ast, json, json_num){}
+
+function find_header(ast, pay_flag, callee_flag, opt_flag, param0, param1){}
+
+
+/*payload*/
+function payload_initial(ast) {
+  /*Initialization*/
+  var pay_flag = 0
+  var callee_flag = 0
+  var opt_flag = 0
+  var param = [0, 0, 0];
+
+  let cnt = 0;
+
+  /*BlockStatement 要素数カウント*/
+  while (undefined != ast.body[0].body.body[cnt]) {
+    cnt++;
+  }
+
+  for (let i = cnt - 1; i >= 0; i--){
+    var tmp = find_payload(ast.body[0].body.body[i], pay_flag, callee_flag, opt_flag, param[0], param[1]);
+
+    /*return後*/
+    param = [tmp[0], tmp[1], tmp[2]];
+    pay_flag = tmp[2];
+    opt_flag = tmp[2];
+  }
+
+  //console.log(param[0], param[1], opt_flag)
+  return [param[0], param[1], opt_flag];
+}
+
+function find_payload(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
+  if (ast === null) {
+    return null;
+  }
+
+  if (ast.type === 'ExpressionStatement') {
+    return find_payload(ast.expression, pay_flag, callee_flag, opt_flag, param0, param1);
+  }
+
+  if (ast.type === 'VariableDeclaration') { // 代入式
+    if (ast.kind === 'var' || ast.kind === 'const' || ast.kind === 'let') {
+      const body = find_payload(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+
+      if(ast.declarations[0].id.name === param0 && opt_flag === 1){
+        opt_flag = 3;
+        let tmp = find_payload(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+        param0 = tmp[0]
+        param1 = tmp[1]
+        opt_flag = tmp[2]
+
+        return [param0, param1, opt_flag];
+      }else if(ast.declarations[0].id.name === param0 && opt_flag === 2){
+        opt_flag = 4;
+        let tmp = find_payload(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+        param0 = tmp[0]
+        param1 = tmp[1]
+        opt_flag = tmp[2]
+
+        return [param0, param1, opt_flag];
+      }else{
+        let tmp = find_payload(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+        if(tmp === null){
+          return [param0, param1, opt_flag];
+        }
+
+        return tmp;
+      }
+    }
+  }
+
+  if (ast.type === 'AssignmentExpression') { // 既存の変数に代入
+    return null;
+  }
+
+  if (ast.type === 'Literal') { // 文字・数字
+    return null;
+  }
+
+  if (ast.type === 'Identifier') { // 変数
+    return null;
+  }
+
+  if (ast.type === 'BinaryExpression') { // +,-などの計算式
+    return null;
+  }
+
+  if (ast.type === 'IfStatement') { // if文
+    return null;
+  }
+
+  if (ast.type === 'BlockStatement') { // 複数行の中身
+    let val = find_url(ast);
+
+    return val;
+  }
+
+  if (ast.type === 'WhileStatement') { // While文
+    return null;
+  }
+
+  if (ast.type === 'ArrayExpression') { // 配列
+    return null;
+  }
+
+  if (ast.type === 'MemberExpression') { // 配列を参照する
+    return null;
+  }
+
+  if (ast.type === 'ObjectExpression') { // ハッシュ作成
+    const props = ast.properties;
+    let i = 0;
+
+    if(opt_flag === 3){//optionの中身
+      while (props[i]) {
+        if(props[i].key.value === 'payload'){
+          param0 = props[i].value.name//右辺
+          param1 = props[i].key.type//左辺
+          pay_flag = 2
+        }
+        i++;
+      }
+    }
+
+    if(opt_flag === 4){//payloadの中身
+      while (props[i]) {
+        if(props[i].key.type === 'Literal'){
+          param0 = props[i].key.value//右辺
+
+        }else if(props[i].key.type === 'Identifer'){
+          param0 = props[i].key.name//右辺
+
+        }
+
+        param1 = props[i].key.type//左辺
+        pay_flag = 0
+        i++;
+        console.log(param0)
+      }
+    }
+
+    return [param0, param1, opt_flag];
+  }
+
+  if (ast.type === 'CallExpression') { // 関数呼び出し
+    if(ast.callee.type === 'MemberExpression'){
+      if(ast.callee.object.name === 'UrlFetchApp' && ast.callee.property.name === 'fetch'){
+
+        callee_flag = 1 // UrlFetchApp.fetchが呼ばれたことを指すフラグ
+      }
+    }
+
+    if(callee_flag === 1){
+      opt_flag = 1
+      callee_flag = 0
+      param0 = ast.arguments[1].name
+      param1 = ast.arguments[1].type
+
+      return [param0, param1, opt_flag];
+    }
+
+    return [param0, param1, opt_flag];
+  }
+
+  if (ast.type === 'FunctionDeclaration') { // ユーザ関数呼び出し
+    const body = find_payload(ast.body, pay_flag, callee_flag, opt_flag, param0, param1);
+
+    return body;
+  }
+
+
+  if (ast.type === 'ReturnStatement') {
+    return null;
+  }
+
+  // 追加の分岐をここに追加する
+
+
+
+  return null;
+}

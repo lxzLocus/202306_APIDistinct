@@ -13,10 +13,9 @@ let axios = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/axios
 main(gas);
 main(node);
 main(axios);
-
 */
 
-//main('E:\\Files\\workspace\\202306\\git-nature-js\\#experiment\\git\\homebridge-nature-remo-sensor\\index.js');
+main('D:\\WorkSpace\\e_drive\\202306\\git-nature-js\\#experiment\\univ\\gs\\tvsend.gs');
 
 
 

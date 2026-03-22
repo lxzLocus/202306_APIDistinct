@@ -5,19 +5,9 @@ const util = require('util');
 module.exports = main;
 
 
-/*
-let testCode = 'D:/WorkSpace/e_drive/202306/git-nature-js/#sort_extension/gs/Light_2.gs';
-let gas = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/tmp.js';
-let node = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/node-fetch.js';
-let axios = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/axios.js';
-main(gas);
-main(node);
-main(axios);
-
-*/
-
-//main('E:\\Files\\workspace\\202306\\git-nature-js\\#experiment\\git\\homebridge-nature-remo-sensor\\index.js');
-
+//let testCode = 'D:/WorkSpace/e_drive/202306/git-nature-js/#sort_extension/gs/aircontrol.gs';
+let testCode = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/axios.js';
+main(testCode);
 
 
 function loadAndParserSrc(processFile) {
@@ -269,7 +259,6 @@ function main(path){
     ast1 = loadAndParserSrc(path);
 
   }catch(e){
-    console.log(path);
     console.log('exception creating AST\n');
 
     return '000';

@@ -1,35 +1,17 @@
-const esprima = require('esprima');
+const esprima = require("esprima");
 const fs = require('fs');
 const util = require('util');
 
-module.exports = main;
-
-
-/*
-let testCode = 'D:/WorkSpace/e_drive/202306/git-nature-js/#sort_extension/gs/Light_2.gs';
-let gas = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/tmp.js';
-let node = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/node-fetch.js';
-let axios = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/axios.js';
-main(gas);
-main(node);
-main(axios);
-
-*/
-
-//main('E:\\Files\\workspace\\202306\\git-nature-js\\#experiment\\git\\homebridge-nature-remo-sensor\\index.js');
-
-
-
-function loadAndParserSrc(processFile) {
-  //const filename = process.argv[2];
-  const filename = processFile;
-  console.log('Loading src file: %s\n', filename);
+function loadAndParserSrc() {
+  const filename = process.argv[2];
+  console.log('Loading src file:' + filename);
 
   const src = loadSrcFile(filename);
   const ast = parseSrc(src);
 
   return ast;
 }
+
 
 function printObj(obj) {
   console.dir(obj, { depth: 10 });
@@ -110,7 +92,7 @@ function simplify(exp, option, keys, payload) {
 
   }
 
-  if (exp.type === 'Literal') {//文字・数字
+  if (exp.type === 'Literal') {//文字・数字 
     if (exp.value === 'payload' && option === 1 && keys === 1 && payload === null) {
       console.log('option内でpayloadが' + exp.type + 'として定義されています')
       payload = 1;
@@ -260,33 +242,144 @@ function makeTree(ast) {
   return stmts;
 }
 
+const ast1 = loadAndParserSrc();
+console.log('-- AST ---');
+printObj(ast1);
 
-/*******MAIN_PROGRAMS*******/
-function main(path){
-  /*create_AST*/
-  let ast1;
-  try{
-    ast1 = loadAndParserSrc(path);
 
-  }catch(e){
-    console.log(path);
-    console.log('exception creating AST\n');
 
-    return '000';
+/*
+Path = 'C:/Users/unico/Desktop'
+const fileNameWithExtension = process.argv[2].split('\\').pop();
+const fileName = fileNameWithExtension.split('.')[0];
+
+Absolute_path = Path + '/' + fileName + '.txt';
+
+
+const textData = util.inspect(ast1, {depth: 10});
+fs.writeFileSync(Absolute_path, textData);
+*/
+
+
+
+
+
+
+
+
+
+comp_Api(ast1);
+
+// ASTの特定の識別子を置換し、エンドポイントの比較を行う関数
+function comp_Api(ast) {
+  const jsonFilePath = 'E:/Files/workspace/202306/nature_sort.json';
+  const jsonString = fs.readFileSync(jsonFilePath, 'utf8');
+  const baseJson = JSON.parse(jsonString);
+
+  find_loop(ast)
+}
+
+function find_loop(ast) {
+  if (ast == null) {
+    return null;
   }
 
-  /*
-  console.log('-- AST ---');
-  printObj(ast1);
-  */
+  if (ast.type === 'ExpressionStatement') {
+    return find_loop(ast.expression);
+  }
 
+  if (ast.type === 'VariableDeclaration') { // 代入式
+    return find_loop(ast.declarations[0].init);
+  }
 
-  /*analyze.js*/
-  const analyze_Prog = require('D:/WorkSpace/e_drive/202306/Esprima_jp/analyze.js');
-  const result = analyze_Prog(ast1);
+  if (ast.type === 'AssignmentExpression') { // 既存の変数に代入
+    return null;
+  }
 
-  //console.log('\n')
-  console.log('Response : %s\n', result);
+  if (ast.type === 'Literal') { // 文字・数字
+    return ast.value;
+  }
 
-  return result;
+  if (ast.type === 'Identifier') { // 変数
+    return ast.name;
+  }
+
+  if (ast.type === 'BinaryExpression') { // +,-などの計算式
+    const left = find_loop(ast.left);
+    const right = find_loop(ast.right);
+
+    return left + ast.operator + right;
+  }
+
+  if (ast.type === 'IfStatement') { // if文
+    const test = find_loop(ast.test);
+    const consequent = find_loop(ast.consequent);
+    const alternate = ast.alternate ? find_loop(ast.alternate) : null;
+
+    return { type: 'IfStatement', test, consequent, alternate };
+  }
+
+  if (ast.type === 'BlockStatement') { // 複数行の中身
+    const body = ast.body.map(statement => find_loop(statement));
+
+    return { type: 'BlockStatement', body };
+  }
+
+  if (ast.type === 'WhileStatement') { // While文
+    const test = find_loop(ast.test);
+    const body = find_loop(ast.body);
+
+    return { type: 'WhileStatement', test, body };
+  }
+
+  if (ast.type === 'ArrayExpression') { // 配列
+    const elements = ast.elements.map(element => find_loop(element));
+
+    return elements;
+  }
+
+  if (ast.type === 'MemberExpression') { // 配列を参照する
+    const object = find_loop(ast.object);
+    const property = find_loop(ast.property);
+
+    return { type: 'MemberExpression', object, property };
+  }
+
+  if (ast.type === 'ObjectExpression') { // ハッシュ作成
+    const obj = {};
+    ast.properties.forEach(property => {
+      const key = find_loop(property.key);
+      const value = find_loop(property.value);
+      obj[key] = value;
+    });
+
+    return obj;
+  }
+
+  if (ast.type === 'CallExpression') { // 関数呼び出し
+    const callee = find_loop(ast.callee);
+    const args = ast.arguments.map(arg => find_loop(arg));
+
+    return { type: 'CallExpression', callee, args };
+  }
+
+  if (ast.type === 'FunctionDeclaration') { // ユーザ関数呼び出し
+    const body = find_loop(ast.body);
+
+    return { type: 'FunctionDeclaration', body };
+  }
+
+  if (ast.type === 'ReturnStatement') {
+    const argument = find_loop(ast.argument);
+
+    return { type: 'ReturnStatement', argument };
+  }
+
+  // 追加の分岐をここに追加する
+
+  return null;
 }
+
+
+
+

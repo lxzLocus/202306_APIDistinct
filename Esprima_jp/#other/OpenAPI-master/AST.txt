@@ -1,0 +1,515 @@
+-- AST ---
+Script {
+  type: 'Program',
+  body: [
+    FunctionDeclaration {
+      type: 'FunctionDeclaration',
+      id: Identifier {
+        type: 'Identifier',
+        name: 'Airconditioner_On',
+        start: undefined,
+        end: undefined
+      },
+      params: [],
+      body: BlockStatement {
+        type: 'BlockStatement',
+        body: [
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'REMO_ACCESS_TOKEN',
+                  start: undefined,
+                  end: undefined
+                },
+                init: Literal {
+                  type: 'Literal',
+                  value: 'JEaUfJuaFBnUWARkjDVldq9B3qVitM11SozJSCxqxGk.Dx8jPx7OGX8yP0kEeGjbk4dCs7_OXKbuTolQxt9RquY',
+                  raw: '"JEaUfJuaFBnUWARkjDVldq9B3qVitM11SozJSCxqxGk.Dx8jPx7OGX8yP0kEeGjbk4dCs7_OXKbuTolQxt9RquY"',
+                  start: undefined,
+                  end: undefined
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'AIRCONDITIONER_ID',
+                  start: undefined,
+                  end: undefined
+                },
+                init: Literal {
+                  type: 'Literal',
+                  value: '337dda01-bd33-404a-b764-29d2ee5b07a9/aircon_settings',
+                  raw: '"337dda01-bd33-404a-b764-29d2ee5b07a9/aircon_settings"',
+                  start: undefined,
+                  end: undefined
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'url',
+                  start: undefined,
+                  end: undefined
+                },
+                init: BinaryExpression {
+                  type: 'BinaryExpression',
+                  operator: '+',
+                  left: Literal {
+                    type: 'Literal',
+                    value: 'https://api.nature.global/1/appliances/',
+                    raw: '"https://api.nature.global/1/appliances/"',
+                    start: undefined,
+                    end: undefined
+                  },
+                  right: Identifier {
+                    type: 'Identifier',
+                    name: 'AIRCONDITIONER_ID',
+                    start: undefined,
+                    end: undefined
+                  }
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'payload',
+                  start: undefined,
+                  end: undefined
+                },
+                init: ObjectExpression {
+                  type: 'ObjectExpression',
+                  properties: [
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Literal],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    }
+                  ]
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'headers',
+                  start: undefined,
+                  end: undefined
+                },
+                init: ObjectExpression {
+                  type: 'ObjectExpression',
+                  properties: [
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [BinaryExpression],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    }
+                  ]
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'options',
+                  start: undefined,
+                  end: undefined
+                },
+                init: ObjectExpression {
+                  type: 'ObjectExpression',
+                  properties: [
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Literal],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    },
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Identifier],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    },
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Identifier],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    }
+                  ]
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          ExpressionStatement {
+            type: 'ExpressionStatement',
+            expression: CallExpression {
+              type: 'CallExpression',
+              callee: StaticMemberExpression {
+                type: 'MemberExpression',
+                computed: false,
+                object: Identifier {
+                  type: 'Identifier',
+                  name: 'UrlFetchApp',
+                  start: undefined,
+                  end: undefined
+                },
+                property: Identifier {
+                  type: 'Identifier',
+                  name: 'fetch',
+                  start: undefined,
+                  end: undefined
+                }
+              },
+              arguments: [
+                Identifier { type: 'Identifier', name: 'url' },
+                Identifier { type: 'Identifier', name: 'options' }
+              ]
+            }
+          },
+          ExpressionStatement {
+            type: 'ExpressionStatement',
+            expression: CallExpression {
+              type: 'CallExpression',
+              callee: StaticMemberExpression {
+                type: 'MemberExpression',
+                computed: false,
+                object: Identifier {
+                  type: 'Identifier',
+                  name: 'console',
+                  start: undefined,
+                  end: undefined
+                },
+                property: Identifier {
+                  type: 'Identifier',
+                  name: 'log',
+                  start: undefined,
+                  end: undefined
+                }
+              },
+              arguments: [
+                Literal {
+                  type: 'Literal',
+                  value: 'エアコンが稼働しました',
+                  raw: '"エアコンが稼働しました"'
+                }
+              ]
+            }
+          }
+        ]
+      },
+      generator: false,
+      expression: false,
+      async: false
+    },
+    FunctionDeclaration {
+      type: 'FunctionDeclaration',
+      id: Identifier {
+        type: 'Identifier',
+        name: 'Airconditioner_Off',
+        start: undefined,
+        end: undefined
+      },
+      params: [],
+      body: BlockStatement {
+        type: 'BlockStatement',
+        body: [
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'REMO_ACCESS_TOKEN',
+                  start: undefined,
+                  end: undefined
+                },
+                init: Literal {
+                  type: 'Literal',
+                  value: 'JEaUfJuaFBnUWARkjDVldq9B3qVitM11SozJSCxqxGk.Dx8jPx7OGX8yP0kEeGjbk4dCs7_OXKbuTolQxt9RquY',
+                  raw: '"JEaUfJuaFBnUWARkjDVldq9B3qVitM11SozJSCxqxGk.Dx8jPx7OGX8yP0kEeGjbk4dCs7_OXKbuTolQxt9RquY"',
+                  start: undefined,
+                  end: undefined
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'AIRCONDITIONER_ID',
+                  start: undefined,
+                  end: undefined
+                },
+                init: Literal {
+                  type: 'Literal',
+                  value: '337dda01-bd33-404a-b764-29d2ee5b07a9/aircon_settings',
+                  raw: '"337dda01-bd33-404a-b764-29d2ee5b07a9/aircon_settings"',
+                  start: undefined,
+                  end: undefined
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'url',
+                  start: undefined,
+                  end: undefined
+                },
+                init: BinaryExpression {
+                  type: 'BinaryExpression',
+                  operator: '+',
+                  left: Literal {
+                    type: 'Literal',
+                    value: 'https://api.nature.global/1/appliances/',
+                    raw: '"https://api.nature.global/1/appliances/"',
+                    start: undefined,
+                    end: undefined
+                  },
+                  right: Identifier {
+                    type: 'Identifier',
+                    name: 'AIRCONDITIONER_ID',
+                    start: undefined,
+                    end: undefined
+                  }
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'payload',
+                  start: undefined,
+                  end: undefined
+                },
+                init: ObjectExpression {
+                  type: 'ObjectExpression',
+                  properties: [
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Literal],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    }
+                  ]
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'headers',
+                  start: undefined,
+                  end: undefined
+                },
+                init: ObjectExpression {
+                  type: 'ObjectExpression',
+                  properties: [
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [BinaryExpression],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    }
+                  ]
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          VariableDeclaration {
+            type: 'VariableDeclaration',
+            declarations: [
+              VariableDeclarator {
+                type: 'VariableDeclarator',
+                id: Identifier {
+                  type: 'Identifier',
+                  name: 'options',
+                  start: undefined,
+                  end: undefined
+                },
+                init: ObjectExpression {
+                  type: 'ObjectExpression',
+                  properties: [
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Literal],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    },
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Identifier],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    },
+                    Property {
+                      type: 'Property',
+                      key: [Literal],
+                      computed: false,
+                      value: [Identifier],
+                      kind: 'init',
+                      method: false,
+                      shorthand: false
+                    }
+                  ]
+                }
+              }
+            ],
+            kind: 'const'
+          },
+          ExpressionStatement {
+            type: 'ExpressionStatement',
+            expression: CallExpression {
+              type: 'CallExpression',
+              callee: StaticMemberExpression {
+                type: 'MemberExpression',
+                computed: false,
+                object: Identifier {
+                  type: 'Identifier',
+                  name: 'UrlFetchApp',
+                  start: undefined,
+                  end: undefined
+                },
+                property: Identifier {
+                  type: 'Identifier',
+                  name: 'fetch',
+                  start: undefined,
+                  end: undefined
+                }
+              },
+              arguments: [
+                Identifier { type: 'Identifier', name: 'url' },
+                Identifier { type: 'Identifier', name: 'options' }
+              ]
+            }
+          },
+          ExpressionStatement {
+            type: 'ExpressionStatement',
+            expression: CallExpression {
+              type: 'CallExpression',
+              callee: StaticMemberExpression {
+                type: 'MemberExpression',
+                computed: false,
+                object: Identifier {
+                  type: 'Identifier',
+                  name: 'console',
+                  start: undefined,
+                  end: undefined
+                },
+                property: Identifier {
+                  type: 'Identifier',
+                  name: 'log',
+                  start: undefined,
+                  end: undefined
+                }
+              },
+              arguments: [
+                Literal {
+                  type: 'Literal',
+                  value: 'エアコンが停止しました',
+                  raw: '"エアコンが停止しました"'
+                }
+              ]
+            }
+          }
+        ]
+      },
+      generator: false,
+      expression: false,
+      async: false
+    }
+  ],
+  sourceType: 'script'
+}

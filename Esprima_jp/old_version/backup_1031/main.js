@@ -2,28 +2,10 @@ const esprima = require('esprima');
 const fs = require('fs');
 const util = require('util');
 
-module.exports = main;
 
-
-/*
-let testCode = 'D:/WorkSpace/e_drive/202306/git-nature-js/#sort_extension/gs/Light_2.gs';
-let gas = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/tmp.js';
-let node = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/node-fetch.js';
-let axios = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/axios.js';
-main(gas);
-main(node);
-main(axios);
-
-*/
-
-//main('E:\\Files\\workspace\\202306\\git-nature-js\\#experiment\\git\\homebridge-nature-remo-sensor\\index.js');
-
-
-
-function loadAndParserSrc(processFile) {
-  //const filename = process.argv[2];
-  const filename = processFile;
-  console.log('Loading src file: %s\n', filename);
+function loadAndParserSrc() {
+  const filename = process.argv[2];
+  console.log('Loading src file:' + filename);
 
   const src = loadSrcFile(filename);
   const ast = parseSrc(src);
@@ -261,32 +243,19 @@ function makeTree(ast) {
 }
 
 
+
+
 /*******MAIN_PROGRAMS*******/
-function main(path){
-  /*create_AST*/
-  let ast1;
-  try{
-    ast1 = loadAndParserSrc(path);
-
-  }catch(e){
-    console.log(path);
-    console.log('exception creating AST\n');
-
-    return '000';
-  }
-
-  /*
-  console.log('-- AST ---');
-  printObj(ast1);
-  */
+/*create_AST*/
+const ast1 = loadAndParserSrc();
+/*
+console.log('-- AST ---');
+printObj(ast1);
+*/
 
 
-  /*analyze.js*/
-  const analyze_Prog = require('D:/WorkSpace/e_drive/202306/Esprima_jp/analyze.js');
-  const result = analyze_Prog(ast1);
+/*analize.js*/
+const analize_Prog = require('D:/WorkSpace/e_drive/202306/Esprima_jp/analize.js');
+const result = analize_Prog(ast1);
 
-  //console.log('\n')
-  console.log('Response : %s\n', result);
-
-  return result;
-}
+console.log(result);

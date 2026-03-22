@@ -1,35 +1,17 @@
-const esprima = require('esprima');
+const esprima = require("esprima");
 const fs = require('fs');
 const util = require('util');
 
-module.exports = main;
-
-
-/*
-let testCode = 'D:/WorkSpace/e_drive/202306/git-nature-js/#sort_extension/gs/Light_2.gs';
-let gas = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/tmp.js';
-let node = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/node-fetch.js';
-let axios = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/axios.js';
-main(gas);
-main(node);
-main(axios);
-
-*/
-
-//main('E:\\Files\\workspace\\202306\\git-nature-js\\#experiment\\git\\homebridge-nature-remo-sensor\\index.js');
-
-
-
-function loadAndParserSrc(processFile) {
-  //const filename = process.argv[2];
-  const filename = processFile;
-  console.log('Loading src file: %s\n', filename);
+function loadAndParserSrc() {
+  const filename = process.argv[2];
+  console.log('Loading src file:' + filename);
 
   const src = loadSrcFile(filename);
   const ast = parseSrc(src);
 
   return ast;
 }
+
 
 function printObj(obj) {
   console.dir(obj, { depth: 10 });
@@ -260,33 +242,166 @@ function makeTree(ast) {
   return stmts;
 }
 
+const ast1 = loadAndParserSrc();
+console.log('-- AST ---');
+printObj(ast1);
 
-/*******MAIN_PROGRAMS*******/
-function main(path){
-  /*create_AST*/
-  let ast1;
-  try{
-    ast1 = loadAndParserSrc(path);
 
-  }catch(e){
-    console.log(path);
-    console.log('exception creating AST\n');
 
-    return '000';
+/*
+Path = 'C:/Users/unico/Desktop'
+const fileNameWithExtension = process.argv[2].split('\\').pop();
+const fileName = fileNameWithExtension.split('.')[0];
+
+Absolute_path = Path + '/' + fileName + '.txt';
+
+
+const textData = util.inspect(ast1, {depth: 10});
+fs.writeFileSync(Absolute_path, textData);
+*/
+
+
+
+
+
+
+
+
+
+comp_Api(ast1);
+
+// ASTの特定の識別子を置換し、エンドポイントの比較を行う関数
+function comp_Api(ast) {
+  const jsonFilePath = 'E:/Files/workspace/202306/nature_sort.json';
+  const jsonString = fs.readFileSync(jsonFilePath, 'utf8');
+  const baseJson = JSON.parse(jsonString);
+
+  let cnt = 0;
+
+  /*BlockStatement 要素数カウント*/
+  while (undefined != ast.body[0].body.body[cnt]) {
+    cnt++;
   }
 
-  /*
-  console.log('-- AST ---');
-  printObj(ast1);
-  */
+  f_ast = find_url(ast, cnt);
+
+  console.dir(f_ast)
+
+  for (let i = cnt - 1; i >= 0; i--) {
+    f_ast.body.body[i];
+  }
+
+}
+
+function find_url(ast, cnt) {
+  /*Initialization*/
+  var pay_flag = false
+  var callee_flag = false
+  var opt_flag = false
+
+  var param = [0, 0, 0];
 
 
-  /*analyze.js*/
-  const analyze_Prog = require('D:/WorkSpace/e_drive/202306/Esprima_jp/analyze.js');
-  const result = analyze_Prog(ast1);
+  var tmp = find_loop(ast.body[0], cnt);
 
-  //console.log('\n')
-  console.log('Response : %s\n', result);
+  return tmp;
+}
 
-  return result;
+function find_loop(ast, cnt) {
+  if (ast == null) {
+    return null;
+  }
+
+  if (ast.type === 'Program') {
+    find_loop(ast.body[prog_cnt], cnt);
+    prog_cnt++;
+
+    return { type: 'Program', prog_cnt };
+  }
+
+
+  if (ast.type === 'ExpressionStatement') {
+    return find_loop(ast.expression, cnt);
+  }
+
+  if (ast.type === 'VariableDeclaration') { // 代入式
+    if (ast.kind === 'var' || ast.kind === 'const' || ast.kind === 'let') {
+      const body = find_loop(ast.declarations[0].init, cnt);
+
+      return { type: 'VariableDeclaration', body };
+    }
+  }
+
+  if (ast.type === 'AssignmentExpression') { // 既存の変数に代入
+    return null;
+  }
+
+  if (ast.type === 'Literal') { // 文字・数字
+    return null;
+  }
+
+  if (ast.type === 'Identifier') { // 変数
+    return null;
+  }
+
+  if (ast.type === 'BinaryExpression') { // +,-などの計算式
+    return null;
+  }
+
+  if (ast.type === 'IfStatement') { // if文
+    return null;
+  }
+
+  if (ast.type === 'BlockStatement') { // 複数行の中身
+    let tmp = find_loop(ast)
+
+    return tmp;
+  }
+
+  if (ast.type === 'WhileStatement') { // While文
+    return null;
+  }
+
+  if (ast.type === 'ArrayExpression') { // 配列
+    return null;
+  }
+
+  if (ast.type === 'MemberExpression') { // 配列を参照する
+    return null;
+  }
+
+  if (ast.type === 'ObjectExpression') { // ハッシュ作成
+    const obj = {};
+    ast.properties.forEach(property => {
+      const key = find_loop(property.key, cnt1);
+      const value = find_loop(property.value, cnt);
+      obj[key] = value;
+    });
+
+    return obj;
+  }
+
+  if (ast.type === 'CallExpression') { // 関数呼び出し
+    const callee = find_loop(ast.callee, cnt);
+    const args = ast.arguments.map(arg => find_loop(arg, cnt));
+
+    return { type: 'CallExpression', callee, args };
+  }
+
+  if (ast.type === 'FunctionDeclaration') { // ユーザ関数呼び出し
+    const body = find_loop(ast.body, cnt);
+
+    return body;
+  }
+
+
+  if (ast.type === 'ReturnStatement') {
+    return null;
+  }
+
+  // 追加の分岐をここに追加する
+
+
+
+  return null;
 }

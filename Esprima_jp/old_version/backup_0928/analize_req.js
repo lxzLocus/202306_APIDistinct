@@ -2,38 +2,14 @@ const esprima = require('esprima');
 const fs = require('fs');
 const util = require('util');
 
-module.exports = main;
-
-
-/*
-let testCode = 'D:/WorkSpace/e_drive/202306/git-nature-js/#sort_extension/gs/Light_2.gs';
-let gas = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/tmp.js';
-let node = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/node-fetch.js';
-let axios = 'D:/WorkSpace/e_drive/202306/git-nature-js/#Google App Scripts/axios.js';
-main(gas);
-main(node);
-main(axios);
-
-*/
-
-//main('E:\\Files\\workspace\\202306\\git-nature-js\\#experiment\\git\\homebridge-nature-remo-sensor\\index.js');
-
-
-
-function loadAndParserSrc(processFile) {
-  //const filename = process.argv[2];
-  const filename = processFile;
-  console.log('Loading src file: %s\n', filename);
+function loadAndParserSrc() {
+  const filename = process.argv[2];
+  console.log('Loading src file:' + filename);
 
   const src = loadSrcFile(filename);
   const ast = parseSrc(src);
 
   return ast;
-}
-
-function printObj(obj) {
-  console.dir(obj, { depth: 10 });
-
 }
 
 function loadSrcFile(filename) {
@@ -260,33 +236,285 @@ function makeTree(ast) {
   return stmts;
 }
 
+const ast1 = loadAndParserSrc();
 
-/*******MAIN_PROGRAMS*******/
-function main(path){
-  /*create_AST*/
-  let ast1;
-  try{
-    ast1 = loadAndParserSrc(path);
 
-  }catch(e){
-    console.log(path);
-    console.log('exception creating AST\n');
 
-    return '000';
+
+
+comp_api(ast1);
+
+
+
+// ASTの特定の識別子を置換し、エンドポイントの比較を行う関数
+function comp_api(ast) {
+  const jsonFilePath = 'E:/Files/workspace/202306/API_json/api_latest.json';
+  const jsonString = fs.readFileSync(jsonFilePath, 'utf8');
+  const baseJson = JSON.parse(jsonString);
+
+
+  /*url_recomm.js*/
+  const searchFiles = require('D:/WorkSpace/e_drive/202306/Esprima_jp/url_recomm.js');
+  const req_folderPath = 'E:/Files/workspace/202306/git-nature-js/#sort_extension/gs';
+  const req_searchString = '/light';
+
+
+
+  /*URL.fetch()*/
+  /*url有無*/
+  var url_logic = url_initial(ast, baseJson)
+  console.log(url_logic[0], url_logic[1])
+
+  /*url_recomm*/
+  searchFiles(req_folderPath, url_logic[1]);
+}
+
+
+
+
+
+
+
+/*URL*/
+function url_initial(ast, json){
+  let logic_flag = [false, 0]
+
+  /*Initialization*/
+  var pay_flag = 0
+  var callee_flag = 0
+  var opt_flag = 0
+  var param = ['', '', ''];
+
+  let url_source = null;
+  var url_source_split = null;
+  var url_json_split = null;
+  let cnt = 0;
+  let cnt_w = 0;
+
+  /*BlockStatement 要素数カウント*/
+  while (undefined != ast.body[0].body.body[cnt]) {
+    cnt++;
   }
 
-  /*
-  console.log('-- AST ---');
-  printObj(ast1);
-  */
+  for (let i = cnt - 1; i >= 0; i--){
+    var tmp = find_url(ast.body[0].body.body[i], pay_flag, callee_flag, opt_flag, param[0], param[1]);
+
+    /*return後*/
+    param = [tmp[0], tmp[1], tmp[2]];
+    url_source = tmp[0]
+    pay_flag = tmp[2];
+    opt_flag = tmp[2];
+
+    /*url変数が見つかったときに探索をスキップ*/
+    if(opt_flag == undefined){
+      break
+    }
+  }
+
+  /*変数が見つからなかった場合*/
+  if(opt_flag == 1){
+    console.log('変数', url_source, 'が見つかりませんでした\n')
+
+    return [logic_flag[0], logic_flag[1]]
+
+  }else{
+
+    console.log('URL 変数検出\n')
+    console.log(url_source, '\n')
+
+    url_source_split = url_split(url_source);
+
+    /*一致URLを探す*/
+    while (undefined != json.nature_apis.api[cnt_w]) {
+      var JsonEndpoint = json.nature_apis.api[cnt_w].endpoint
 
 
-  /*analyze.js*/
-  const analyze_Prog = require('D:/WorkSpace/e_drive/202306/Esprima_jp/analyze.js');
-  const result = analyze_Prog(ast1);
+      url_json_split = url_split(JsonEndpoint);
 
-  //console.log('\n')
-  console.log('Response : %s\n', result);
+      const minLength = Math.min(url_source_split.length, url_json_split.length);
+
+
+      /*配列を後ろから比較*/
+      for (let i = 0; i < minLength - 1; i++) {
+        if (url_source_split[url_source_split.length - 1 - i] == url_json_split[url_json_split.length - 1 - i]) {
+          /*一致*/
+          logic_flag[0] = true
+          /*jsonの何番目か*/
+          logic_flag[1] = '/' + url_source_split[url_source_split.length - 1]
+        } else {
+          logic_flag[0] = false
+          break
+        }
+      }
+
+      if (logic_flag[0] == true) {
+
+        let server_url_split = url_split(json.nature_apis.servers[0].url)
+
+        /*servers.urlが一致するか*/
+        for(let p = 0; p < server_url_split.length; p++){
+          if (url_source_split[p] != server_url_split[p]){
+
+            console.log('ベースURL 誤り\n')
+
+            break;
+          } else if (p == server_url_split.length-1){
+
+            console.log('URL 完全一致\n')
+          }
+        }
+
+        break;
+      }
+
+
+      cnt_w++;
+    }
+
+    /*一致の有無, apiリストの何番目か*/
+    return [logic_flag[0], logic_flag[1]]
+  }
+}
+
+function find_url(ast, pay_flag, callee_flag, opt_flag, param0, param1) {
+  if (ast === null){
+
+    return null;
+  }
+
+  if (ast.type === 'BlockStatement') { // 複数行の中身
+    let val = find_url(ast);
+
+    return val;
+  }
+
+  if (ast.type === 'ExpressionStatement') {
+    return find_url(ast.expression, pay_flag, callee_flag, opt_flag, param0, param1);
+  }
+
+  if (ast.type === 'VariableDeclaration') { // 代入式
+    if (ast.kind === 'var' || ast.kind === 'const' || ast.kind === 'let') {
+      const body = find_url(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+      if(ast.declarations[0].id.name === param0 && opt_flag === 1){
+        /*検出*/
+        opt_flag = 3;
+        let tmp = find_url(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+        /*ast.declarations[0].init以下の値を取得する
+        BinaryExpressionか様々なやつ*/
+        param0 = tmp[0] //内容
+        param1 = tmp[1] //型
+        opt_flag = tmp[2]
+
+        return [param0, param1, opt_flag];
+      }else{
+        let tmp = find_url(ast.declarations[0].init, pay_flag, callee_flag, opt_flag, param0, param1);
+
+        if(tmp === null){
+          return [param0, param1, opt_flag];
+        }
+
+        return tmp;
+      }
+    }
+  }
+
+  if (ast.type === 'CallExpression') { // 関数呼び出し
+    if(ast.callee.type === 'MemberExpression'){
+      if(ast.callee.object.name === 'UrlFetchApp' && ast.callee.property.name === 'fetch'){
+
+        callee_flag = 1 // UrlFetchApp.fetchが呼ばれたことを指すフラグ
+      }
+    }
+
+    if(callee_flag === 1){
+      opt_flag = 1
+      callee_flag = 0
+      param0 = ast.arguments[0].name
+      param1 = ast.arguments[0].type
+
+      /*UrlFetchAppのIdentifer name:url をreturn*/
+      return [param0, param1, opt_flag];
+    }
+
+    return [param0, param1, opt_flag];
+  }
+
+  if (ast.type === 'FunctionDeclaration') { // ユーザ関数呼び出し
+    const body = find_url(ast.body, pay_flag, callee_flag, opt_flag, param0, param1);
+
+    return body;
+  }
+
+
+  /*URL*/
+  if (ast.type === 'BinaryExpression') { // +,-などの計算式
+    const left = find_url(ast.left, pay_flag, callee_flag, opt_flag, param0, param1);
+    const right = find_url(ast.right, pay_flag, callee_flag, opt_flag, param0, param1);
+
+    if(left == null || right == null){
+      return null;
+    }else{
+      return [left + ast.operator + right];
+    }
+  }
+
+  if (ast.type === 'Literal') { // 文字・数字
+    if(opt_flag === 3){
+      return ast.value;
+    }
+
+    return null;
+  }
+
+  if (ast.type === 'Identifier') {
+    if(opt_flag === 3){
+      return ast.name;
+    }
+
+    return null;
+  }
+
+
+  if (ast.type === 'SwitchStatement') {
+
+    return [param0, param1, opt_flag];
+  }
+
+
+
+  /*************
+
+  更に下層にノードがある ast.type はnullではなく
+  [param0, param1, opt_flag] ???????
+
+  **************/
+
+  return null;
+}
+
+function url_split(url){
+  /* / 区切りをする */
+  const parts = url.split('/');
+
+  const result = [];
+
+  let inTokenMode = false;
+
+  for (const part of parts) {
+    if (part.includes('{') || part.includes('+')) {
+      inTokenMode = true;
+      result.push('TOKEN');
+      continue;
+    }
+
+    if (inTokenMode) {
+      inTokenMode = false;
+    }
+
+    result.push(part);
+  }
 
   return result;
 }
